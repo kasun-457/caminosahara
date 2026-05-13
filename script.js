@@ -1,5 +1,13 @@
-// ── Legacy seed (마이그레이션용 — Firebase 로드 전에 실행) ──────────────────────
-(function seedLegacyIfNeeded() {
+// ── localStorage 정리 (이전 버전 잔여 데이터 제거) ─────────────────────────────
+//  이전 버전의 시드 함수가 매 페이지 로드마다 localStorage에 데이터를 다시 써서
+//  마이그레이션이 반복 실행되며 중복 여행이 생성되던 버그를 막기 위해,
+//  앱 시작 시점에 잔여 localStorage 데이터를 비웁니다.
+localStorage.removeItem('trips');
+localStorage.setItem('migrated', 'true');
+
+/* 시드 함수 제거됨 — 이전 버전 코드 보존용 (실행되지 않음)
+(function seedLegacyIfNeeded_REMOVED() {
+  if (localStorage.getItem('migrated')) return;
   const TITLE = '스페인·모로코 3주 여행';
   const existing = JSON.parse(localStorage.getItem('trips') || '[]');
   if (existing.some(t => t.title === TITLE)) return;
@@ -178,6 +186,7 @@
   existing.unshift(trip);
   localStorage.setItem('trips', JSON.stringify(existing));
 }());
+*/
 
 // ── Firebase 참조 ──────────────────────────────────────────────────────────────
 const db = firebase.firestore();
@@ -323,6 +332,7 @@ async function migrateLegacyData(user) {
 
   await batch.commit();
   localStorage.removeItem('trips');
+  localStorage.setItem('migrated', 'true');
   showToast(`${legacyTrips.length}개 여행을 클라우드로 이전했습니다 ✓`);
 }
 
@@ -406,8 +416,8 @@ function renderTripList() {
           <h2 class="trip-card-name">${trip.title}</h2>
         </div>
         <div class="trip-card-bottom">
-          <span class="trip-meta">${fmtShort(trip.startDate)} – ${fmtShort(trip.endDate)}</span>
-          <span class="trip-meta">${days.length}일 · ${totalActs}개 일정 · 👥 ${members}</span>
+          <span class="trip-meta">${fmtShort(trip.startDate)} – ${fmtShort(trip.endDate)} · ${days.length}일 · ${totalActs}개</span>
+          <span class="trip-members">👥 ${members}</span>
         </div>
       </div>`;
   }).join('');
