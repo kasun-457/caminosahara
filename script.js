@@ -339,64 +339,43 @@ function mapDirectionsUrl(from, to) {
 
 let detailContext = { activityId: null, date: null };
 
-function openActivityDetail(activityId, date) {
-  const trip = trips.find(t => t.id === currentTripId);
-  const dayData = trip.days.find(d => d.date === date);
-  const act = dayData?.activities.find(a => a.id === activityId);
-  if (!act) return;
-  detailContext = { activityId, date };
+// ── 상세 편집 패널 ─────────────────────────────────────────────────────────
+function renderDetailPanelFields(category, details = {}) {
+  const container = document.getElementById('dp-dynamic-fields');
+  const fields = CATEGORY_FIELDS[category] || [];
+  container.innerHTML = fields.map(f => `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
+               placeholder="${escapeHtml(f.placeholder || '')}"
+               value="${escapeHtml(details[f.key] || '')}">
+      </div>
+    </div>`).join('');
 
-  const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
-  const badge = document.getElementById('detail-cat-badge');
-  badge.textContent = `${cat.icon} ${act.category}`;
-  badge.style.color = cat.color;
-  badge.style.background = `color-mix(in srgb, ${cat.color} 14%, transparent)`;
-  badge.style.border = `1px solid color-mix(in srgb, ${cat.color} 35%, transparent)`;
+  container.querySelectorAll('.dp-field-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
+    });
+  });
+}
 
-  document.getElementById('detail-title-text').textContent = act.title;
-  document.getElementById('detail-time-text').textContent = act.time ? `⏰ ${act.time}` : '';
+function gatherDetailPanelFields() {
+  const details = {};
+  document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
+    const v = el.value.trim();
+    if (v) details[el.dataset.key] = v;
+  });
+  return details;
+}
 
-  const fields = CATEGORY_FIELDS[act.category] || [];
-  const details = act.details || {};
-  const fieldsEl = document.getElementById('detail-fields');
-  const rows = fields
-    .filter(f => details[f.key])
-    .map(f => {
-      const val = details[f.key];
-      const isUrl = /^https?:\/\//i.test(val);
-      const valHtml = isUrl
-        ? `<a href="${escapeHtml(val)}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
-        : escapeHtml(val);
-      return `
-        <div class="detail-field">
-          <span class="detail-field-icon">${f.icon}</span>
-          <span class="detail-field-label">${f.label}</span>
-          <span class="detail-field-value">${valHtml}</span>
-        </div>`;
-    }).join('');
-  fieldsEl.innerHTML = rows || `
-    <div class="detail-field">
-      <span class="detail-field-icon">📭</span>
-      <span class="detail-field-label">정보</span>
-      <span class="detail-field-value" style="color:var(--muted)">아직 상세 정보가 없습니다 — [수정]에서 추가할 수 있어요.</span>
-    </div>`;
-
-  // 메모
-  const notesWrap = document.getElementById('detail-notes-wrap');
-  if (act.notes) {
-    notesWrap.style.display = 'block';
-    document.getElementById('detail-notes-text').textContent = act.notes;
-  } else {
-    notesWrap.style.display = 'none';
-  }
-
-  // 지도
-  const mapWrap = document.getElementById('detail-map-wrap');
-  const mapFrame = document.getElementById('detail-map-frame');
-  const mapBtn = document.getElementById('btn-open-map');
-  let mapQuery = null;
-  let openUrl = null;
-  if (act.category === '교통' && details.fromLocation && details.toLocation) {
+function updateDetailPanelMap(category, details) {
+  const mapWrap = document.getElementById('dp-map-wrap');
+  const mapFrame = document.getElementById('dp-map-frame');
+  const mapLink = document.getElementById('dp-map-link');
+  let mapQuery = null, openUrl = null;
+  if (category === '교통' && details.fromLocation && details.toLocation) {
     mapQuery = `${details.fromLocation} to ${details.toLocation}`;
     openUrl = mapDirectionsUrl(details.fromLocation, details.toLocation);
   } else if (details.address) {
@@ -409,13 +388,76 @@ function openActivityDetail(activityId, date) {
   if (mapQuery) {
     mapWrap.style.display = 'block';
     mapFrame.src = mapEmbedUrl(mapQuery);
-    mapBtn.href = openUrl;
+    mapLink.href = openUrl;
   } else {
     mapWrap.style.display = 'none';
-    mapFrame.removeAttribute('src');
+  }
+}
+
+function openDetailPanel(activityId, date) {
+  const trip = trips.find(t => t.id === currentTripId);
+  const dayData = trip?.days.find(d => d.date === date);
+  const act = dayData?.activities.find(a => a.id === activityId);
+  if (!act) return;
+  detailContext = { activityId, date };
+
+  document.getElementById('dp-category').value = act.category;
+  document.getElementById('dp-time').value = act.time || '';
+  document.getElementById('dp-title').value = act.title;
+  document.getElementById('dp-title').classList.remove('invalid');
+  document.getElementById('dp-notes').value = act.notes || '';
+  renderDetailPanelFields(act.category, act.details || {});
+  updateDetailPanelMap(act.category, act.details || {});
+
+  document.querySelectorAll('.activity-item.dp-active').forEach(el => el.classList.remove('dp-active'));
+  const activeItem = document.querySelector(`.activity-item[data-id="${activityId}"]`);
+  if (activeItem) activeItem.classList.add('dp-active');
+
+  document.getElementById('detail-panel').classList.add('active');
+}
+
+function closeDetailPanel() {
+  document.getElementById('detail-panel').classList.remove('active');
+  document.querySelectorAll('.activity-item.dp-active').forEach(el => el.classList.remove('dp-active'));
+  detailContext = { activityId: null, date: null };
+}
+
+async function saveDetailPanel() {
+  const { activityId, date } = detailContext;
+  if (!activityId) return;
+
+  const title = document.getElementById('dp-title').value.trim();
+  if (!title) {
+    document.getElementById('dp-title').classList.add('invalid');
+    showToast('제목을 입력해주세요');
+    return;
   }
 
-  openModal('modal-activity-detail');
+  const time = document.getElementById('dp-time').value;
+  const category = document.getElementById('dp-category').value;
+  const notes = document.getElementById('dp-notes').value.trim();
+  const details = gatherDetailPanelFields();
+
+  const trip = trips.find(t => t.id === currentTripId);
+  const updatedDays = JSON.parse(JSON.stringify(trip.days));
+  const dayData = updatedDays.find(d => d.date === date);
+  if (!dayData) return;
+  const act = dayData.activities.find(a => a.id === activityId);
+  if (!act) return;
+
+  act.time = time; act.category = category; act.title = title; act.notes = notes; act.details = details;
+
+  const btn = document.getElementById('dp-save');
+  btn.disabled = true;
+  try {
+    await db.collection('trips').doc(currentTripId).update({ days: updatedDays });
+    showToast('저장됐습니다 ✓');
+  } catch (err) {
+    console.error(err);
+    showToast('저장에 실패했습니다.');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── 모달 헬퍼 ─────────────────────────────────────────────────────────────────
@@ -797,6 +839,7 @@ function renderDayTabs(trip) {
   tabsEl.querySelectorAll('.day-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       currentDayIndex = parseInt(tab.dataset.day);
+      closeDetailPanel();
       renderDayTabs(trip);
     });
   });
@@ -850,12 +893,12 @@ function renderActivities(trip, date) {
     body.addEventListener('click', e => {
       if (e.target.closest('.icon-btn')) return;
       const item = body.closest('.activity-item');
-      openActivityDetail(item.dataset.id, date);
+      openDetailPanel(item.dataset.id, date);
     });
   });
 
   panel.querySelectorAll('.btn-edit-act').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); openActivityModal(btn.dataset.id, date); });
+    btn.addEventListener('click', e => { e.stopPropagation(); openDetailPanel(btn.dataset.id, date); });
   });
 
   panel.querySelectorAll('.btn-del-act').forEach(btn => {
@@ -1048,6 +1091,7 @@ function confirmAction(message, callback) {
 }
 
 function goBack() {
+  closeDetailPanel();
   currentTripId = null;
   document.getElementById('nav-breadcrumb').textContent = '';
   document.getElementById('nav-back').style.display = 'none';
@@ -1089,16 +1133,23 @@ document.getElementById('activity-category').addEventListener('change', e => {
   renderActivityFormFields(e.target.value, {});
 });
 
-document.getElementById('btn-edit-detail').addEventListener('click', () => {
-  const ctx = { ...detailContext };
-  closeModal('modal-activity-detail');
-  openActivityModal(ctx.activityId, ctx.date);
+document.getElementById('dp-close').addEventListener('click', closeDetailPanel);
+
+document.getElementById('dp-save').addEventListener('click', saveDetailPanel);
+
+document.getElementById('dp-category').addEventListener('change', e => {
+  renderDetailPanelFields(e.target.value, {});
+  updateDetailPanelMap(e.target.value, {});
 });
 
-document.getElementById('btn-delete-detail').addEventListener('click', () => {
+document.getElementById('dp-title').addEventListener('input', () => {
+  document.getElementById('dp-title').classList.remove('invalid');
+});
+
+document.getElementById('dp-delete').addEventListener('click', () => {
   const ctx = { ...detailContext };
   confirmAction('이 일정을 삭제할까요?', async () => {
-    closeModal('modal-activity-detail');
+    closeDetailPanel();
     await deleteActivity(currentTripId, ctx.date, ctx.activityId);
   });
 });
@@ -1118,7 +1169,10 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  ['modal-confirm', 'modal-activity', 'modal-activity-detail', 'modal-trip', 'modal-delete-account'].forEach(id => {
+  if (document.getElementById('detail-panel').classList.contains('active')) {
+    closeDetailPanel(); return;
+  }
+  ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account'].forEach(id => {
     if (document.getElementById(id).classList.contains('active')) closeModal(id);
   });
 });

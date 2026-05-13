@@ -140,7 +140,43 @@
         <div class="day-tabs" id="day-tabs"></div>
       </div>
 
-      <div class="activities-panel" id="activities-panel"></div>
+      <div class="trip-content-row" id="trip-content-row">
+        <div class="activities-panel" id="activities-panel"></div>
+
+        <aside class="detail-panel" id="detail-panel">
+          <div class="dp-header">
+            <div class="dp-top-row">
+              <select class="dp-cat-select" id="dp-category">
+                <option value="관광">🏛️ 관광</option>
+                <option value="식사">🍽️ 식사</option>
+                <option value="교통">🚌 교통</option>
+                <option value="숙박">🏨 숙박</option>
+                <option value="쇼핑">🛍️ 쇼핑</option>
+                <option value="기타">📌 기타</option>
+              </select>
+              <input type="time" class="dp-time-input" id="dp-time">
+              <button type="button" class="dp-close" id="dp-close" aria-label="닫기">✕</button>
+            </div>
+            <input type="text" class="dp-title-input" id="dp-title" placeholder="일정 제목">
+          </div>
+          <div class="dp-body">
+            <div class="dp-dynamic-fields" id="dp-dynamic-fields"></div>
+            <div class="dp-notes-section">
+              <span class="dp-section-label">💬 메모</span>
+              <textarea class="dp-notes-input" id="dp-notes" placeholder="추가 정보를 입력하세요..." rows="3"></textarea>
+            </div>
+            <div class="dp-map-wrap" id="dp-map-wrap" style="display:none">
+              <span class="dp-section-label">🗺️ 지도</span>
+              <iframe class="dp-map-frame" id="dp-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+              <a class="btn-map" id="dp-map-link" href="#" target="_blank" rel="noopener">🗺️ Google 지도에서 열기 →</a>
+            </div>
+          </div>
+          <div class="dp-footer">
+            <button type="button" class="btn-danger btn-sm" id="dp-delete">삭제</button>
+            <button type="button" class="btn-primary btn-sm" id="dp-save">저장</button>
+          </div>
+        </aside>
+      </div>
     </section>
   </main>
 
@@ -241,37 +277,6 @@
           <button type="submit" class="btn-primary">저장</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- 일정 상세 보기 모달 -->
-  <div class="modal-overlay" id="modal-activity-detail">
-    <div class="modal modal-detail">
-      <div class="modal-header">
-        <div class="detail-head">
-          <span class="detail-cat-badge" id="detail-cat-badge"></span>
-          <h2 id="detail-title-text"></h2>
-          <p class="detail-time-text" id="detail-time-text"></p>
-        </div>
-        <button class="modal-close" data-close="modal-activity-detail">✕</button>
-      </div>
-      <div class="detail-body">
-        <div class="detail-fields" id="detail-fields"></div>
-        <div class="detail-notes-wrap" id="detail-notes-wrap" style="display:none">
-          <p class="detail-section-label">💬 메모</p>
-          <p class="detail-notes-text" id="detail-notes-text"></p>
-        </div>
-        <div class="detail-map-wrap" id="detail-map-wrap" style="display:none">
-          <p class="detail-section-label">🗺️ 지도</p>
-          <iframe class="detail-map-frame" id="detail-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          <a class="btn-map" id="btn-open-map" href="#" target="_blank" rel="noopener">🗺️ Google 지도에서 열기 →</a>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-danger btn-sm" id="btn-delete-detail">삭제</button>
-        <button type="button" class="btn-outline btn-sm" data-close="modal-activity-detail">닫기</button>
-        <button type="button" class="btn-primary btn-sm" id="btn-edit-detail">수정</button>
-      </div>
     </div>
   </div>
 
