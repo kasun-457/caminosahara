@@ -221,6 +221,7 @@
           <input type="text" id="activity-title" placeholder="예: 에펠탑 방문" autocomplete="off">
           <span class="field-error" id="err-activity-title"></span>
         </div>
+        <div id="activity-dynamic-fields"></div>
         <div class="form-group">
           <label for="activity-notes">메모 (선택)</label>
           <textarea id="activity-notes" placeholder="추가 정보를 입력하세요..." rows="3"></textarea>
@@ -230,6 +231,37 @@
           <button type="submit" class="btn-primary">저장</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 일정 상세 보기 모달 -->
+  <div class="modal-overlay" id="modal-activity-detail">
+    <div class="modal modal-detail">
+      <div class="modal-header">
+        <div class="detail-head">
+          <span class="detail-cat-badge" id="detail-cat-badge"></span>
+          <h2 id="detail-title-text"></h2>
+          <p class="detail-time-text" id="detail-time-text"></p>
+        </div>
+        <button class="modal-close" data-close="modal-activity-detail">✕</button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-fields" id="detail-fields"></div>
+        <div class="detail-notes-wrap" id="detail-notes-wrap" style="display:none">
+          <p class="detail-section-label">💬 메모</p>
+          <p class="detail-notes-text" id="detail-notes-text"></p>
+        </div>
+        <div class="detail-map-wrap" id="detail-map-wrap" style="display:none">
+          <p class="detail-section-label">🗺️ 지도</p>
+          <iframe class="detail-map-frame" id="detail-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <a class="btn-map" id="btn-open-map" href="#" target="_blank" rel="noopener">🗺️ Google 지도에서 열기 →</a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-danger btn-sm" id="btn-delete-detail">삭제</button>
+        <button type="button" class="btn-outline btn-sm" data-close="modal-activity-detail">닫기</button>
+        <button type="button" class="btn-primary btn-sm" id="btn-edit-detail">수정</button>
+      </div>
     </div>
   </div>
 

@@ -254,6 +254,168 @@ const CATEGORIES = {
   '기타': { icon: '📌', color: '#7a7a82' },
 };
 
+const CATEGORY_FIELDS = {
+  '관광': [
+    { key: 'address', label: '주소', icon: '📍', placeholder: '예: Calle Mayor 1, Madrid' },
+    { key: 'openHours', label: '운영시간', icon: '🕐', placeholder: '예: 10:00 - 20:00' },
+    { key: 'price', label: '입장료', icon: '💰', placeholder: '예: 15유로 (성인)' },
+    { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
+  ],
+  '식사': [
+    { key: 'address', label: '주소', icon: '📍', placeholder: '식당 주소' },
+    { key: 'cuisine', label: '요리 종류', icon: '🍴', placeholder: '예: 스페인 타파스' },
+    { key: 'price', label: '예상 가격', icon: '💰', placeholder: '예: 15-30유로' },
+    { key: 'reservation', label: '예약 정보', icon: '📞', placeholder: '예약 시간 / 번호' },
+  ],
+  '교통': [
+    { key: 'mode', label: '교통수단', icon: '🚌', placeholder: '예: 기차 / 비행기 / 버스' },
+    { key: 'fromLocation', label: '출발지', icon: '🟢', placeholder: '예: 마드리드 아토차역' },
+    { key: 'toLocation', label: '도착지', icon: '🔴', placeholder: '예: 사리아역' },
+    { key: 'departTime', label: '출발 시각', icon: '🕐', placeholder: '예: 08:15' },
+    { key: 'arriveTime', label: '도착 시각', icon: '🕓', placeholder: '예: 14:30' },
+    { key: 'bookingNumber', label: '예약번호', icon: '🎫', placeholder: '티켓/편명/예약번호' },
+    { key: 'price', label: '요금', icon: '💰', placeholder: '예: 65유로' },
+  ],
+  '숙박': [
+    { key: 'address', label: '주소', icon: '📍', placeholder: '숙소 주소' },
+    { key: 'checkIn', label: '체크인', icon: '🔑', placeholder: '예: 16:00' },
+    { key: 'checkOut', label: '체크아웃', icon: '🚪', placeholder: '예: 11:00' },
+    { key: 'bookingNumber', label: '예약번호', icon: '🎫', placeholder: '' },
+    { key: 'price', label: '숙박료', icon: '💰', placeholder: '예: 45유로/박' },
+    { key: 'url', label: '예약 사이트', icon: '🔗', placeholder: 'https://...' },
+  ],
+  '쇼핑': [
+    { key: 'address', label: '주소', icon: '📍', placeholder: '' },
+    { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
+    { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
+  ],
+  '기타': [
+    { key: 'address', label: '위치', icon: '📍', placeholder: '' },
+    { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
+  ],
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderActivityFormFields(category, details = {}) {
+  const container = document.getElementById('activity-dynamic-fields');
+  const fields = CATEGORY_FIELDS[category] || [];
+  container.innerHTML = fields.map(f => `
+    <div class="form-group">
+      <label for="actf-${f.key}">${f.icon} ${f.label}</label>
+      <input type="text" id="actf-${f.key}" data-detail-key="${f.key}"
+             placeholder="${escapeHtml(f.placeholder || '')}"
+             value="${escapeHtml(details[f.key] || '')}" autocomplete="off">
+    </div>
+  `).join('');
+}
+
+function gatherActivityDetails(category) {
+  const details = {};
+  const fields = CATEGORY_FIELDS[category] || [];
+  fields.forEach(f => {
+    const el = document.getElementById(`actf-${f.key}`);
+    if (el) {
+      const v = el.value.trim();
+      if (v) details[f.key] = v;
+    }
+  });
+  return details;
+}
+
+function mapEmbedUrl(query) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+}
+function mapSearchUrl(query) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+function mapDirectionsUrl(from, to) {
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}`;
+}
+
+let detailContext = { activityId: null, date: null };
+
+function openActivityDetail(activityId, date) {
+  const trip = trips.find(t => t.id === currentTripId);
+  const dayData = trip.days.find(d => d.date === date);
+  const act = dayData?.activities.find(a => a.id === activityId);
+  if (!act) return;
+  detailContext = { activityId, date };
+
+  const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
+  const badge = document.getElementById('detail-cat-badge');
+  badge.textContent = `${cat.icon} ${act.category}`;
+  badge.style.color = cat.color;
+  badge.style.background = `color-mix(in srgb, ${cat.color} 14%, transparent)`;
+  badge.style.border = `1px solid color-mix(in srgb, ${cat.color} 35%, transparent)`;
+
+  document.getElementById('detail-title-text').textContent = act.title;
+  document.getElementById('detail-time-text').textContent = act.time ? `⏰ ${act.time}` : '';
+
+  const fields = CATEGORY_FIELDS[act.category] || [];
+  const details = act.details || {};
+  const fieldsEl = document.getElementById('detail-fields');
+  const rows = fields
+    .filter(f => details[f.key])
+    .map(f => {
+      const val = details[f.key];
+      const isUrl = /^https?:\/\//i.test(val);
+      const valHtml = isUrl
+        ? `<a href="${escapeHtml(val)}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
+        : escapeHtml(val);
+      return `
+        <div class="detail-field">
+          <span class="detail-field-icon">${f.icon}</span>
+          <span class="detail-field-label">${f.label}</span>
+          <span class="detail-field-value">${valHtml}</span>
+        </div>`;
+    }).join('');
+  fieldsEl.innerHTML = rows || `
+    <div class="detail-field">
+      <span class="detail-field-icon">📭</span>
+      <span class="detail-field-label">정보</span>
+      <span class="detail-field-value" style="color:var(--muted)">아직 상세 정보가 없습니다 — [수정]에서 추가할 수 있어요.</span>
+    </div>`;
+
+  // 메모
+  const notesWrap = document.getElementById('detail-notes-wrap');
+  if (act.notes) {
+    notesWrap.style.display = 'block';
+    document.getElementById('detail-notes-text').textContent = act.notes;
+  } else {
+    notesWrap.style.display = 'none';
+  }
+
+  // 지도
+  const mapWrap = document.getElementById('detail-map-wrap');
+  const mapFrame = document.getElementById('detail-map-frame');
+  const mapBtn = document.getElementById('btn-open-map');
+  let mapQuery = null;
+  let openUrl = null;
+  if (act.category === '교통' && details.fromLocation && details.toLocation) {
+    mapQuery = `${details.fromLocation} to ${details.toLocation}`;
+    openUrl = mapDirectionsUrl(details.fromLocation, details.toLocation);
+  } else if (details.address) {
+    mapQuery = details.address;
+    openUrl = mapSearchUrl(details.address);
+  } else if (details.fromLocation || details.toLocation) {
+    mapQuery = details.fromLocation || details.toLocation;
+    openUrl = mapSearchUrl(mapQuery);
+  }
+  if (mapQuery) {
+    mapWrap.style.display = 'block';
+    mapFrame.src = mapEmbedUrl(mapQuery);
+    mapBtn.href = openUrl;
+  } else {
+    mapWrap.style.display = 'none';
+    mapFrame.removeAttribute('src');
+  }
+
+  openModal('modal-activity-detail');
+}
+
 // ── 모달 헬퍼 ─────────────────────────────────────────────────────────────────
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -292,6 +454,7 @@ function authErrorMessage(err) {
   const map = {
     'auth/invalid-email': '올바른 이메일 형식이 아닙니다.',
     'auth/missing-password': '비밀번호를 입력해주세요.',
+    'auth/missing-email': '이메일을 입력해주세요.',
     'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
     'auth/email-already-in-use': '이미 가입된 이메일입니다.',
     'auth/user-not-found': '가입되지 않은 이메일입니다.',
@@ -299,10 +462,16 @@ function authErrorMessage(err) {
     'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
     'auth/too-many-requests': '시도가 너무 많습니다. 잠시 후 다시 시도해주세요.',
     'auth/popup-closed-by-user': '로그인 창이 닫혔습니다.',
+    'auth/popup-blocked': '팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.',
     'auth/network-request-failed': '네트워크 오류가 발생했습니다.',
     'auth/requires-recent-login': '보안을 위해 다시 로그인해주세요.',
+    'auth/operation-not-allowed': '이메일/비밀번호 로그인이 Firebase 콘솔에서 비활성화되어 있어요. 콘솔 → Authentication → Sign-in method에서 활성화해주세요.',
+    'auth/admin-restricted-operation': 'Firebase 관리자 설정으로 차단된 작업입니다.',
+    'auth/unauthorized-domain': '현재 도메인이 Firebase 승인 도메인 목록에 없습니다. 콘솔 → Authentication → Settings → 승인된 도메인에 추가해주세요.',
   };
-  return map[code] || err?.message || '오류가 발생했습니다.';
+  if (map[code]) return map[code];
+  if (code) return `[${code}] ${err?.message || ''}`.trim();
+  return err?.message || '오류가 발생했습니다.';
 }
 
 async function signInWithGoogle() {
@@ -672,6 +841,14 @@ function renderActivities(trip, date) {
 
   document.getElementById('btn-add-activity').addEventListener('click', () => openActivityModal(null, date));
 
+  panel.querySelectorAll('.activity-body').forEach(body => {
+    body.addEventListener('click', e => {
+      if (e.target.closest('.icon-btn')) return;
+      const item = body.closest('.activity-item');
+      openActivityDetail(item.dataset.id, date);
+    });
+  });
+
   panel.querySelectorAll('.btn-edit-act').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); openActivityModal(btn.dataset.id, date); });
   });
@@ -773,6 +950,9 @@ function openActivityModal(activityId, date) {
   document.getElementById('err-activity-title').textContent = '';
   document.getElementById('activity-title').classList.remove('invalid');
 
+  let category = '관광';
+  let details = {};
+
   if (activityId) {
     const trip = trips.find(t => t.id === currentTripId);
     const dayData = trip.days.find(d => d.date === date);
@@ -783,12 +963,15 @@ function openActivityModal(activityId, date) {
       document.getElementById('activity-category').value = act.category;
       document.getElementById('activity-title').value = act.title;
       document.getElementById('activity-notes').value = act.notes || '';
+      category = act.category;
+      details = act.details || {};
     }
   } else {
     document.getElementById('modal-activity-heading').textContent = '일정 추가';
     document.getElementById('form-activity').reset();
   }
 
+  renderActivityFormFields(category, details);
   openModal('modal-activity');
   document.getElementById('activity-title').focus();
 }
@@ -805,6 +988,7 @@ async function saveActivityForm(e) {
   const time = document.getElementById('activity-time').value;
   const category = document.getElementById('activity-category').value;
   const notes = document.getElementById('activity-notes').value.trim();
+  const details = gatherActivityDetails(category);
   const date = editingActivityDate;
 
   const trip = trips.find(t => t.id === currentTripId);
@@ -814,9 +998,9 @@ async function saveActivityForm(e) {
 
   if (editingActivityId) {
     const act = dayData.activities.find(a => a.id === editingActivityId);
-    if (act) { act.time = time; act.category = category; act.title = title; act.notes = notes; }
+    if (act) { act.time = time; act.category = category; act.title = title; act.notes = notes; act.details = details; }
   } else {
-    dayData.activities.push({ id: uid(), time, category, title, notes });
+    dayData.activities.push({ id: uid(), time, category, title, notes, details });
   }
 
   try {
@@ -896,6 +1080,24 @@ document.getElementById('btn-delete-trip').addEventListener('click', () => {
 document.getElementById('form-trip').addEventListener('submit', saveTripForm);
 document.getElementById('form-activity').addEventListener('submit', saveActivityForm);
 
+document.getElementById('activity-category').addEventListener('change', e => {
+  renderActivityFormFields(e.target.value, {});
+});
+
+document.getElementById('btn-edit-detail').addEventListener('click', () => {
+  const ctx = { ...detailContext };
+  closeModal('modal-activity-detail');
+  openActivityModal(ctx.activityId, ctx.date);
+});
+
+document.getElementById('btn-delete-detail').addEventListener('click', () => {
+  const ctx = { ...detailContext };
+  confirmAction('이 일정을 삭제할까요?', async () => {
+    closeModal('modal-activity-detail');
+    await deleteActivity(currentTripId, ctx.date, ctx.activityId);
+  });
+});
+
 document.getElementById('btn-confirm-ok').addEventListener('click', async () => {
   if (confirmCallback) { await confirmCallback(); confirmCallback = null; }
   closeModal('modal-confirm');
@@ -911,7 +1113,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account'].forEach(id => {
+  ['modal-confirm', 'modal-activity', 'modal-activity-detail', 'modal-trip', 'modal-delete-account'].forEach(id => {
     if (document.getElementById(id).classList.contains('active')) closeModal(id);
   });
 });
