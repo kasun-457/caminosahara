@@ -5,8 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>여행 플래너</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 <body>
+
+  <!-- 로그인 오버레이 -->
+  <div class="login-overlay active" id="login-overlay">
+    <div class="login-card">
+      <div class="login-logo">✈ 여행 플래너</div>
+      <h1 class="login-title">함께하는 여행</h1>
+      <p class="login-desc">구글 계정으로 로그인하여<br>팀원들과 일정을 실시간 공유하세요</p>
+      <button class="btn-google" id="btn-google-login">
+        <span class="google-g">G</span>
+        Google로 로그인
+      </button>
+    </div>
+  </div>
 
   <header>
     <nav>
@@ -14,6 +32,10 @@
       <div class="nav-right">
         <span class="breadcrumb" id="nav-breadcrumb"></span>
         <button class="btn-outline btn-sm" id="nav-back" style="display:none">← 목록으로</button>
+        <div class="user-info" id="user-info" style="display:none">
+          <img class="user-avatar" id="user-avatar" src="" alt="프로필">
+          <button class="btn-outline btn-sm" id="btn-logout">로그아웃</button>
+        </div>
       </div>
     </nav>
   </header>
@@ -44,6 +66,7 @@
           <p class="trip-dates-label" id="trip-dates-label"></p>
         </div>
         <div class="trip-hero-actions">
+          <button class="btn-outline btn-sm" id="btn-share-trip">🔗 초대</button>
           <button class="btn-outline btn-sm" id="btn-edit-trip">수정</button>
           <button class="btn-danger btn-sm" id="btn-delete-trip">삭제</button>
         </div>
