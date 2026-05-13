@@ -136,7 +136,24 @@
         </div>
       </div>
 
-      <div class="day-tabs-wrapper">
+      <!-- 뷰 전환 툴바 -->
+      <div class="cal-toolbar" id="cal-toolbar">
+        <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
+          <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
+          <span class="cal-period-label" id="cal-period-label"></span>
+          <button type="button" class="cal-nav-btn" id="cal-next-btn">›</button>
+        </div>
+        <div style="flex:1"></div>
+        <div class="cal-view-tabs">
+          <button type="button" class="cal-view-tab active" data-view="list">목록</button>
+          <button type="button" class="cal-view-tab" data-view="day">일</button>
+          <button type="button" class="cal-view-tab" data-view="3day">3일</button>
+          <button type="button" class="cal-view-tab" data-view="all">전체</button>
+        </div>
+      </div>
+
+      <!-- 목록 뷰 -->
+      <div id="list-view-tabs" class="day-tabs-wrapper">
         <div class="day-tabs" id="day-tabs"></div>
       </div>
 
@@ -154,7 +171,11 @@
                 <option value="쇼핑">🛍️ 쇼핑</option>
                 <option value="기타">📌 기타</option>
               </select>
-              <input type="time" class="dp-time-input" id="dp-time">
+              <div class="dp-time-range">
+                <input type="time" class="dp-time-input" id="dp-time">
+                <span class="dp-time-sep">–</span>
+                <input type="time" class="dp-time-input" id="dp-end-time">
+              </div>
               <button type="button" class="dp-close" id="dp-close" aria-label="닫기">✕</button>
             </div>
             <input type="text" class="dp-title-input" id="dp-title" placeholder="일정 제목">
@@ -177,6 +198,9 @@
           </div>
         </aside>
       </div>
+
+      <!-- 캘린더 그리드 뷰 -->
+      <div id="cal-view" style="display:none"></div>
     </section>
   </main>
 
