@@ -717,19 +717,35 @@ async function migrateLegacyData(user) {
 
 // ── 초대 링크 ─────────────────────────────────────────────────────────────────
 async function handleJoinFromUrl() {
-  const joinCode = new URLSearchParams(window.location.search).get('join');
-  if (!joinCode) return;
+  const params = new URLSearchParams(window.location.search);
+  const tripId = params.get('tripId');
+  const joinCode = params.get('join');
+
+  // tripId와 joinCode가 모두 있어야만 작동합니다.
+  if (!tripId || !joinCode) return;
   window.history.replaceState({}, '', window.location.pathname);
 
   try {
-    const snap = await db.collection('trips').where('shareCode', '==', joinCode).limit(1).get();
-    if (snap.empty) { showToast('유효하지 않은 초대 링크입니다.'); return; }
+    // 변경: 전체 검색(where) 대신 특정 문서(doc)를 바로 가져옵니다.
+    const docRef = db.collection('trips').doc(tripId);
+    const docSnap = await docRef.get();
 
-    const docRef = snap.docs[0].ref;
-    const trip = snap.docs[0].data();
+    if (!docSnap.exists) { 
+      showToast('유효하지 않은 여행입니다.'); return; 
+    }
+
+    const trip = docSnap.data();
+
+    // 가져온 문서의 공유 코드가 링크의 코드와 일치하는지 확인합니다.
+    if (trip.shareCode !== joinCode) {
+      showToast('초대 코드가 올바르지 않습니다.'); return;
+    }
+
     if (trip.memberIds.includes(currentUser.uid)) {
       showToast('이미 참여 중인 여행입니다.'); return;
     }
+
+    // 멤버 추가 업데이트
     await docRef.update({ memberIds: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
     showToast(`"${trip.title}" 여행에 참여했습니다!`);
   } catch (err) {
@@ -741,7 +757,8 @@ async function handleJoinFromUrl() {
 async function copyShareLink(tripId) {
   const trip = trips.find(t => t.id === tripId);
   if (!trip) return;
-  const url = `${location.origin}${location.pathname}?join=${trip.shareCode}`;
+  // 변경: URL에 tripId 파라미터를 추가하여 정확한 목적지를 알려줍니다.
+  const url = `${location.origin}${location.pathname}?tripId=${trip.id}&join=${trip.shareCode}`;
   try {
     await navigator.clipboard.writeText(url);
     showToast('초대 링크가 복사되었습니다!');
