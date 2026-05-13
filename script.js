@@ -219,7 +219,10 @@ function getDays(start, end) {
   const s = new Date(start + 'T00:00:00');
   const e = new Date(end + 'T00:00:00');
   for (const d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-    days.push(d.toISOString().split('T')[0]);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    days.push(`${y}-${m}-${day}`);
   }
   return days;
 }
@@ -271,23 +274,93 @@ function showToast(msg) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
+let authMode = 'login'; // 'login' | 'signup'
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === mode);
+  });
+  document.getElementById('auth-confirm-group').style.display = mode === 'signup' ? 'flex' : 'none';
+  document.getElementById('auth-submit').textContent = mode === 'signup' ? '회원가입' : '로그인';
+  document.getElementById('auth-password').autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
+  document.getElementById('auth-error').textContent = '';
+}
+
+function authErrorMessage(err) {
+  const code = err?.code || '';
+  const map = {
+    'auth/invalid-email': '올바른 이메일 형식이 아닙니다.',
+    'auth/missing-password': '비밀번호를 입력해주세요.',
+    'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+    'auth/email-already-in-use': '이미 가입된 이메일입니다.',
+    'auth/user-not-found': '가입되지 않은 이메일입니다.',
+    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+    'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+    'auth/too-many-requests': '시도가 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    'auth/popup-closed-by-user': '로그인 창이 닫혔습니다.',
+    'auth/network-request-failed': '네트워크 오류가 발생했습니다.',
+    'auth/requires-recent-login': '보안을 위해 다시 로그인해주세요.',
+  };
+  return map[code] || err?.message || '오류가 발생했습니다.';
+}
+
 async function signInWithGoogle() {
   try {
     await auth.signInWithPopup(googleProvider);
   } catch (err) {
     console.error(err);
-    showToast('로그인에 실패했습니다. 다시 시도해주세요.');
+    document.getElementById('auth-error').textContent = authErrorMessage(err);
+  }
+}
+
+async function submitAuthForm(e) {
+  e.preventDefault();
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const confirm = document.getElementById('auth-password-confirm').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+
+  if (!email) { errEl.textContent = '이메일을 입력해주세요.'; return; }
+  if (!password) { errEl.textContent = '비밀번호를 입력해주세요.'; return; }
+
+  if (authMode === 'signup') {
+    if (password.length < 6) { errEl.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
+    if (password !== confirm) { errEl.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+  }
+
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '...';
+
+  try {
+    if (authMode === 'signup') {
+      await auth.createUserWithEmailAndPassword(email, password);
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+  } catch (err) {
+    console.error(err);
+    errEl.textContent = authErrorMessage(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
 async function signOutUser() {
   if (unsubscribeTrips) { unsubscribeTrips(); unsubscribeTrips = null; }
+  closeUserMenu();
   await auth.signOut();
 }
 
 function showLoginScreen() {
   document.getElementById('login-overlay').classList.add('active');
   document.getElementById('user-info').style.display = 'none';
+  setAuthMode('login');
+  document.getElementById('form-auth').reset();
 }
 
 function showApp() {
@@ -296,12 +369,96 @@ function showApp() {
 }
 
 function updateUserUI(user) {
+  const btn = document.getElementById('user-btn');
   const avatar = document.getElementById('user-avatar');
+  const initial = document.getElementById('user-initial');
+  const name = user.displayName || (user.email ? user.email.split('@')[0] : '사용자');
+
   if (user.photoURL) {
     avatar.src = user.photoURL;
-    avatar.style.display = 'block';
+    btn.classList.remove('no-avatar');
   } else {
-    avatar.style.display = 'none';
+    btn.classList.add('no-avatar');
+    initial.textContent = name.charAt(0).toUpperCase();
+  }
+
+  document.getElementById('user-menu-name').textContent = name;
+  document.getElementById('user-menu-email').textContent = user.email || '';
+}
+
+// ── 사용자 메뉴 ────────────────────────────────────────────────────────────────
+function toggleUserMenu() {
+  document.getElementById('user-menu').classList.toggle('active');
+}
+
+function closeUserMenu() {
+  document.getElementById('user-menu').classList.remove('active');
+}
+
+// ── 회원탈퇴 ───────────────────────────────────────────────────────────────────
+function openDeleteAccountModal() {
+  closeUserMenu();
+  const isPassword = currentUser.providerData.some(p => p.providerId === 'password');
+  document.getElementById('reauth-password-group').style.display = isPassword ? 'flex' : 'none';
+  document.getElementById('reauth-password').value = '';
+  document.getElementById('delete-error').textContent = '';
+  document.getElementById('form-delete-account').dataset.provider = isPassword ? 'password' : 'google';
+  openModal('modal-delete-account');
+}
+
+async function reauthenticate(provider) {
+  if (provider === 'password') {
+    const password = document.getElementById('reauth-password').value;
+    if (!password) throw { code: 'auth/missing-password' };
+    const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+    await currentUser.reauthenticateWithCredential(credential);
+  } else {
+    await currentUser.reauthenticateWithPopup(googleProvider);
+  }
+}
+
+async function deleteOwnedTripsAndLeaveShared() {
+  const ownedSnap = await db.collection('trips').where('ownerId', '==', currentUser.uid).get();
+  const sharedSnap = await db.collection('trips')
+    .where('memberIds', 'array-contains', currentUser.uid).get();
+
+  const batch = db.batch();
+  ownedSnap.forEach(doc => batch.delete(doc.ref));
+
+  const ownedIds = new Set(ownedSnap.docs.map(d => d.id));
+  sharedSnap.forEach(doc => {
+    if (!ownedIds.has(doc.id)) {
+      batch.update(doc.ref, {
+        memberIds: firebase.firestore.FieldValue.arrayRemove(currentUser.uid),
+      });
+    }
+  });
+  await batch.commit();
+}
+
+async function submitDeleteAccount(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('delete-error');
+  const btn = document.getElementById('btn-confirm-delete-account');
+  const provider = document.getElementById('form-delete-account').dataset.provider;
+  errEl.textContent = '';
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '처리 중...';
+
+  try {
+    await reauthenticate(provider);
+    if (unsubscribeTrips) { unsubscribeTrips(); unsubscribeTrips = null; }
+    await deleteOwnedTripsAndLeaveShared();
+    await currentUser.delete();
+    closeModal('modal-delete-account');
+    showToast('회원탈퇴가 완료되었습니다.');
+  } catch (err) {
+    console.error(err);
+    errEl.textContent = authErrorMessage(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
   }
 }
 
@@ -711,6 +868,20 @@ function goBack() {
 
 // ── 이벤트 리스너 ─────────────────────────────────────────────────────────────
 document.getElementById('btn-google-login').addEventListener('click', signInWithGoogle);
+document.getElementById('form-auth').addEventListener('submit', submitAuthForm);
+document.querySelectorAll('.auth-tab').forEach(tab => {
+  tab.addEventListener('click', () => setAuthMode(tab.dataset.tab));
+});
+document.getElementById('user-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  toggleUserMenu();
+});
+document.addEventListener('click', e => {
+  const menu = document.getElementById('user-menu');
+  if (menu.classList.contains('active') && !e.target.closest('.user-info')) closeUserMenu();
+});
+document.getElementById('btn-delete-account').addEventListener('click', openDeleteAccountModal);
+document.getElementById('form-delete-account').addEventListener('submit', submitDeleteAccount);
 document.getElementById('btn-logout').addEventListener('click', signOutUser);
 document.getElementById('btn-new-trip').addEventListener('click', () => openTripModal());
 document.getElementById('btn-new-trip-empty').addEventListener('click', () => openTripModal());
@@ -740,7 +911,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  ['modal-confirm', 'modal-activity', 'modal-trip'].forEach(id => {
+  ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account'].forEach(id => {
     if (document.getElementById(id).classList.contains('active')) closeModal(id);
   });
 });
