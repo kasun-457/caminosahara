@@ -394,4 +394,251 @@ document.querySelectorAll('.color-btn').forEach(btn => {
   });
 });
 
+function seedSaharaTrip() {
+  const TITLE = '스페인·모로코 3주 여행';
+  if (trips.some(t => t.title === TITLE)) return;
+
+  const days = [
+    {
+      date: '2026-07-17',
+      activities: [
+        { time: '11:50', category: '교통', title: '인천공항 출발', notes: '아시아나항공 탑승' },
+        { time: '19:10', category: '교통', title: '바르셀로나 도착', notes: '바르셀로나 엘프라트 공항' },
+        { time: '20:35', category: '교통', title: 'iryo 기차로 마드리드 이동', notes: '바르셀로나 → 마드리드' },
+        { time: '23:52', category: '숙박', title: '마드리드 도착 및 숙소 체크인', notes: 'Hostel Siesta&Go (Atocha 인근)' },
+      ],
+    },
+    {
+      date: '2026-07-18',
+      activities: [
+        { time: '', category: '관광', title: '마드리드 간단한 시내 관광', notes: '소로야 미술관, 레티로 공원 등 동선 고려' },
+        { time: '', category: '쇼핑', title: '순례길 준비물 및 간편식 구매', notes: '데카트론, 현지 슈퍼마켓 등에서 배낭용 간식·선크림·붕대 등 구매' },
+        { time: '', category: '식사', title: '저녁식사 후 이른 취침', notes: '컨디션 관리 — 순례길 전날이므로 일찍 취침' },
+      ],
+    },
+    {
+      date: '2026-07-19',
+      activities: [
+        { time: '', category: '교통', title: '마드리드 우체국에서 짐 발송', notes: '산티아고 데 콤포스텔라로 순례길 불필요 짐 택배 발송' },
+        { time: '', category: '관광', title: '마드리드 왕궁 관람', notes: 'Palacio Real de Madrid — 유럽 최대 규모 왕궁 중 하나' },
+        { time: '', category: '식사', title: '점심식사', notes: '왕궁 인근 타베르나 또는 메르카도 데 산 미겔' },
+        { time: '', category: '교통', title: '사리아(Sarria)로 이동', notes: '기차(Madrid-Chamartin) → 루고(Lugo) 또는 몬포르테 환승 후 사리아 버스 이동' },
+        { time: '', category: '기타', title: '순례자 여권(크레덴시알) 구매', notes: '사리아 인근 교회 또는 알베르게에서 구매 가능' },
+        { time: '', category: '식사', title: '현지 식당에서 저녁식사', notes: '갈리시아 전통 요리 체험 추천 — 폴보(문어 요리) 등' },
+        { time: '', category: '숙박', title: '숙소 도착 및 순례 준비·취침', notes: '배낭 점검, 이튿날 코스 확인 후 충분한 수면' },
+      ],
+    },
+    {
+      date: '2026-07-20',
+      activities: [
+        { time: '06:00', category: '기타', title: '순례길 출발 — Day 1', notes: '사리아(Sarria) → 포르토마린(Portomarín) 약 22.4km' },
+        { time: '12:00', category: '숙박', title: '포르토마린 공립 알베르게 도착·체크인', notes: '선착순 입장 — 일찍 도착해야 자리 확보 가능' },
+        { time: '', category: '관광', title: '포르토마린 마을 관광', notes: '산 후안 성당(이전된 로마네스크 교회), 댐 풍경 감상' },
+        { time: '', category: '식사', title: '알베르게 저녁식사 및 휴식', notes: '다른 순례자들과 교류' },
+      ],
+    },
+    {
+      date: '2026-07-21',
+      activities: [
+        { time: '05:00', category: '기타', title: '순례길 출발 — Day 2', notes: '포르토마린 → 팔라스 데 레이(Palas de Rei) 약 25km (장거리 구간)' },
+        { time: '12:00', category: '숙박', title: '팔라스 데 레이 공립 알베르게 도착·체크인', notes: '긴 구간이므로 이른 출발로 자리 선점' },
+        { time: '', category: '관광', title: '팔라스 데 레이 주변 관광', notes: '산 티르소 교회, 마을 산책' },
+        { time: '', category: '식사', title: '마을 식당 저녁식사', notes: '메뉴 델 디아(순례자 메뉴) 이용 추천' },
+      ],
+    },
+    {
+      date: '2026-07-22',
+      activities: [
+        { time: '07:00', category: '기타', title: '순례길 출발 — Day 3', notes: '팔라스 데 레이 → 멜리데(Melide) 약 14.8km (짧은 구간, 여유롭게)' },
+        { time: '12:00', category: '숙박', title: '멜리데 공립 알베르게 도착·체크인', notes: '여유 있는 도착' },
+        { time: '', category: '식사', title: '멜리데 문어 요리 체험', notes: '멜리데는 갈리시아 폴보(pulpo)의 본고장 — 풀페리아 에스카르파에서 꼭 먹어볼 것' },
+        { time: '', category: '관광', title: '멜리데 마을 관광', notes: '산티아고 데 멜리데 교회, 마을 산책' },
+        { time: '', category: '기타', title: '바에서 다른 순례자들과 담소', notes: '지금까지의 순례 경험을 공유하는 시간' },
+      ],
+    },
+    {
+      date: '2026-07-23',
+      activities: [
+        { time: '07:00', category: '기타', title: '순례길 출발 — Day 4', notes: '멜리데 → 아르주아(Arzúa) 약 14km' },
+        { time: '12:00', category: '숙박', title: '아르주아 공립 알베르게 도착·체크인', notes: '내일이면 산티아고까지 이틀 남음' },
+        { time: '', category: '관광', title: '아르주아 마을 관광', notes: '아르주아 치즈(Queixo de Arzúa-Ulloa) 유명 — 치즈 쇼핑 추천' },
+        { time: '', category: '식사', title: '알베르게 저녁식사', notes: '' },
+        { time: '', category: '기타', title: '팀원들과 순례길 감상 나누기', notes: '일주일간의 경험 회고 — 나머지 구간에 대한 마음가짐 정리' },
+      ],
+    },
+    {
+      date: '2026-07-24',
+      activities: [
+        { time: '06:00', category: '기타', title: '순례길 출발 — Day 5', notes: '아르주아 → 오 페드로조(O Pedrouzo) 약 19.1km' },
+        { time: '12:00', category: '숙박', title: '오 페드로조 공립 알베르게 도착·체크인', notes: '내일이 산티아고 도착일 — 마지막 밤' },
+        { time: '', category: '관광', title: '오 페드로조 주변 관광', notes: '산타 이레네 예배당 방문 추천' },
+        { time: '', category: '식사', title: '알베르게 저녁식사 및 휴식', notes: '마지막 구간을 위해 충분한 수면' },
+      ],
+    },
+    {
+      date: '2026-07-25',
+      activities: [
+        { time: '06:00', category: '기타', title: '순례길 출발 — 최종 구간', notes: '오 페드로조 → 산티아고 데 콤포스텔라 약 20km — 몬테 도 고소(Monte do Gozo) 경유' },
+        { time: '', category: '관광', title: '산티아고 데 콤포스텔라 도착 · 순례자 인증서 발급', notes: '순례자 사무소(Oficina de Acogida al Peregrino)에서 콤포스텔라 발급' },
+        { time: '', category: '식사', title: '점심식사', notes: '대성당 광장(Praza do Obradoiro) 인근 식당' },
+        { time: '', category: '관광', title: '산티아고 시내 관광 및 짐 찾기', notes: '미리 발송한 짐을 수령, 구시가지(아세비체리아 거리 등) 산책' },
+        { time: '', category: '숙박', title: '숙소 체크인 및 휴식', notes: '이제 알베르게 대신 호텔·한인민박 등 편한 숙소 이용 추천' },
+        { time: '19:30', category: '관광', title: '순례자 미사 참석', notes: '산티아고 대성당 일일 순례자 미사 — 보타푸메이로(대형 향로) 이벤트 확인' },
+        { time: '', category: '식사', title: '현지 바·식당에서 저녁식사 및 뒷풀이', notes: '라콘 콘 그렐로스(돼지 어깨살), 갈리시아 와인 알바리뇨 추천' },
+      ],
+    },
+    {
+      date: '2026-07-26',
+      activities: [
+        { time: '', category: '관광', title: '산티아고 대성당 오전 미사 참가', notes: '대성당 내부에서 미사 참여 — 경건한 마무리' },
+        { time: '', category: '관광', title: '산티아고 대성당 내부 관람', notes: '박물관·지하 묘지·옥상 투어 가능 (사전 예약 권장)' },
+        { time: '', category: '교통', title: '산티아고 공항 → 마드리드 비행기 이동', notes: 'SCQ→MAD 국내선 (1시간 내외)' },
+        { time: '', category: '식사', title: '마드리드 도착 후 늦은 점심식사', notes: '마드리드 중앙시장(메르카도 산 미겔) 또는 그란 비아 인근' },
+        { time: '', category: '숙박', title: '마드리드 숙소 체크인', notes: '' },
+        { time: '', category: '관광', title: '마드리드 저녁 관광', notes: '프라도 미술관 야간 개장 또는 그란 비아·라바피에스 지구 산책' },
+        { time: '', category: '식사', title: '저녁식사', notes: '보카디요 데 칼라마레스(오징어 바게트), 타파스 바 순회 추천' },
+      ],
+    },
+    {
+      date: '2026-07-27',
+      activities: [
+        { time: '', category: '교통', title: '톨레도로 이동', notes: 'Atocha역에서 AVE 약 30분 또는 버스로 1시간' },
+        { time: '', category: '관광', title: '톨레도 대성당', notes: '스페인 고딕 건축의 정수 — 내부 종교 미술 컬렉션 필견' },
+        { time: '', category: '관광', title: '알카사르 & 유대인 지구 관광', notes: '알카사르(군사 박물관), 엘 그레코 박물관, 산타 마리아 라 블랑카 시나고그' },
+        { time: '', category: '식사', title: '톨레도 늦은 점심식사', notes: '코치니요(새끼 돼지 구이) 또는 마르차판(마지판 과자)' },
+        { time: '', category: '교통', title: '마드리드 복귀 후 마라케시 비행기 이동', notes: 'MAD→RAK — 라이언에어·이베리아 등 저가항공 약 2시간 30분' },
+        { time: '', category: '관광', title: '마라케시 간단한 관광·야시장', notes: '제마 엘프나 광장(Djemaa el-Fna) 야시장 구경' },
+        { time: '', category: '식사', title: '저녁식사 후 이른 취침', notes: '다음날 이른 메르주가 이동을 위해 충분한 수면' },
+      ],
+    },
+    {
+      date: '2026-07-28',
+      activities: [
+        { time: '06:00', category: '교통', title: '마라케시 → 메르주가 택시 이동', notes: '약 180유로 / 편도 약 9~10시간 — 사전 협상 권장, 중간 휴게 포함' },
+        { time: '16:00', category: '기타', title: '사막투어 시작 — 핫산네 사하라 투어 1일차', notes: '메르주가 출발' },
+        { time: '', category: '관광', title: '낙타 타고 이동 (약 1시간) · 석양 감상', notes: '에르그 쉐비(Erg Chebbi) 모래사막 진입 — 일몰 시 황금빛 사막 풍경' },
+        { time: '', category: '숙박', title: '사막 캠프 도착', notes: '베르베르 텐트 스타일 글램핑 캠프' },
+        { time: '', category: '식사', title: '저녁식사 · 민트티 · 캠프파이어', notes: '타진, 쿠스쿠스 전통식 제공' },
+        { time: '', category: '관광', title: '별 보기', notes: '광공해 없는 사막의 밤 — 은하수 관측 가능' },
+      ],
+    },
+    {
+      date: '2026-07-29',
+      activities: [
+        { time: '10:30', category: '관광', title: '사막투어 2일차 — 낙타 타고 깊은 사막 이동 (약 1시간 15분)', notes: '에르그 쉐비 내부 깊숙이 이동' },
+        { time: '', category: '식사', title: '점심 + 샌드보딩', notes: '모래 언덕에서 샌드보딩 체험' },
+        { time: '', category: '관광', title: '높은 모래 언덕 등반 · 파노라마 감상', notes: '에르그 쉐비 최고 언덕(약 150m)에서 360° 사막 전경' },
+        { time: '17:00', category: '관광', title: '낙타 타고 석양 감상', notes: '붉은 노을과 사막의 대비' },
+        { time: '', category: '식사', title: '저녁식사 + 베르베르 음악 공연', notes: '귀나우바 리듬 전통 음악 감상' },
+      ],
+    },
+    {
+      date: '2026-07-30',
+      activities: [
+        { time: '', category: '관광', title: '사막투어 3일차 — 일출 감상', notes: '새벽 모래 언덕에서 일출 — 사하라 여행의 하이라이트' },
+        { time: '', category: '숙박', title: '핫산네 호텔로 복귀 · 샤워 및 정리', notes: '' },
+        { time: '', category: '교통', title: '메르주가 → 페스(Fez) 버스 이동', notes: '약 8~9시간 — CTM 또는 수프라투르 버스 예약 권장' },
+        { time: '', category: '식사', title: '페스 도착 후 식사', notes: '' },
+        { time: '', category: '숙박', title: '페스 숙소 체크인 및 취침', notes: '페스 엘발리(구시가지) 인근 리야드 추천' },
+      ],
+    },
+    {
+      date: '2026-07-31',
+      activities: [
+        { time: '', category: '교통', title: '페스 → 쉐프샤우엔 버스 이동', notes: 'CTM 버스 약 4시간 — 사전 예약 권장' },
+        { time: '', category: '식사', title: '쉐프샤우엔 도착 후 점심식사', notes: '' },
+        { time: '', category: '숙박', title: '숙소 체크인 또는 짐 보관', notes: '파란 마을 중심부 리야드·게스트하우스' },
+        { time: '', category: '관광', title: '쉐프샤우엔 마을 관광', notes: '파란 계단길, 우타 엘함맘 광장, 카사바 박물관, 라스 엘마 폭포' },
+        { time: '', category: '식사', title: '저녁식사 및 휴식', notes: '쉐프샤우엔 전통 카페에서 민트티와 함께 휴식' },
+      ],
+    },
+    {
+      date: '2026-08-01',
+      activities: [
+        { time: '', category: '교통', title: '쉐프샤우엔 → 탕헤르 항구 버스 이동', notes: '약 3시간' },
+        { time: '', category: '교통', title: '탕헤르 → 타리파(스페인) 페리 이동', notes: 'FRS 또는 Baleàlia 페리 약 35분 — 지브롤터 해협 횡단' },
+        { time: '', category: '교통', title: '타리파 → 세비야 버스 이동', notes: '약 2시간 (Comes 버스)' },
+        { time: '', category: '식사', title: '세비야 도착 후 저녁식사', notes: '트리아나 지구 타파스 바 추천 — 하몬, 가스파초' },
+        { time: '', category: '관광', title: '메트로폴 파라솔(세따스) 야경 관람', notes: '세계 최대 목조 구조물 — 옥상 전망대에서 세비야 야경 감상' },
+      ],
+    },
+    {
+      date: '2026-08-02',
+      activities: [
+        { time: '', category: '기타', title: '오전 자유 일정', notes: '순례길 이후 지친 몸을 회복하는 여유로운 오전 — 숙소 수영장 또는 카페에서 휴식' },
+        { time: '', category: '식사', title: '점심식사', notes: '' },
+        { time: '', category: '관광', title: '세비야 관광', notes: '세비야 대성당·히랄다 탑, 알카사르(왕궁), 황금의 탑, 스페인 광장' },
+        { time: '21:00', category: '관광', title: '플라멩코 공연 관람', notes: '타블라오 엘 아레날 또는 라 카사 데 라 기타라 예약 권장' },
+      ],
+    },
+    {
+      date: '2026-08-03',
+      activities: [
+        { time: '', category: '관광', title: '산타크루즈 지구 관광', notes: '꽃으로 장식된 골목길, 도냐 엘비라 광장, 세비야 유대인 지구' },
+        { time: '', category: '식사', title: '이른 점심식사', notes: '' },
+        { time: '', category: '교통', title: '세비야 → 그라나다 기차 이동', notes: 'Avant/MD 기차 약 3시간' },
+        { time: '', category: '관광', title: '그라나다 대성당 및 시내 관광', notes: '왕실 예배당(이사벨·페르난도 묘소), 알카이세리아 시장' },
+        { time: '', category: '관광', title: '알함브라 궁전 야경 관람', notes: '알바이신 언덕 산니콜라스 전망대(Mirador de San Nicolás)에서 야경 추천' },
+      ],
+    },
+    {
+      date: '2026-08-04',
+      activities: [
+        { time: '09:00', category: '관광', title: '알함브라 궁전 투어', notes: '나스르 궁전(Nasrid Palaces) 입장 시간 엄수 — 온라인 사전 예약 필수 / 헤네랄리페 정원, 카를로스 5세 궁전 포함' },
+        { time: '', category: '교통', title: '그라나다 → 발렌시아 기차 이동', notes: '코르도바 또는 마드리드 환승 — 약 5~7시간 (Renfe 예약 권장)' },
+        { time: '', category: '숙박', title: '발렌시아 도착 후 숙소 체크인 및 휴식', notes: '' },
+      ],
+    },
+    {
+      date: '2026-08-05',
+      activities: [
+        { time: '', category: '관광', title: '발렌시아 시내 관광', notes: "발렌시아 대성당(성배 보관), 과학예술도시(L'Hemisfèric·Oceanogràfic), 실크거래소" },
+        { time: '', category: '식사', title: '점심식사 — 정통 발렌시아 빠에야', notes: '발렌시아식 빠에야(Paella Valenciana) — 발원지에서 정통 맛 체험' },
+        { time: '', category: '쇼핑', title: '센트럴 마켓(Mercado Central)에서 간식 구매', notes: '유럽 최대 재래시장 중 하나 — 과일, 하몬, 치즈 등' },
+        { time: '', category: '관광', title: '말바로사 해변(Playa de la Malvarrosa) 방문', notes: '발렌시아 시내에서 트램으로 10분 — 지중해 해수욕' },
+        { time: '', category: '식사', title: '말바로사 해변 근처 식당 저녁식사', notes: '아로스 알 오르노(오븐 쌀 요리) 또는 피데우아(파스타 빠에야) 추천' },
+      ],
+    },
+    {
+      date: '2026-08-06',
+      activities: [
+        { time: '', category: '교통', title: '첫차로 타라고나(Tarragona) 이동', notes: 'Renfe 기차 약 1시간 30분' },
+        { time: '', category: '관광', title: '페라리랜드(PortAventura Ferrari Land) 방문', notes: '유럽 최고속 롤러코스터 레드 포스(Red Force) — 약 4~5시간 즐기기' },
+        { time: '14:00', category: '교통', title: '타라고나 → 바르셀로나 출발', notes: 'Renfe 기차 약 1시간' },
+        { time: '', category: '숙박', title: '바르셀로나 숙소 체크인', notes: '' },
+        { time: '', category: '관광', title: '바르셀로나 야경 투어', notes: '람블라스 거리, 바르셀로네타 해변 야경, 매직 분수(Font Màgica) 쇼 확인' },
+      ],
+    },
+    {
+      date: '2026-08-07',
+      activities: [
+        { time: '08:00', category: '관광', title: '사그라다 파밀리아 대성당', notes: '가우디 미완성 걸작 — 내부 스테인드글라스 빛 체험 / 타워 입장 포함 온라인 예약 필수' },
+        { time: '', category: '관광', title: '구엘 공원(Park Güell)', notes: '가우디 타일 모자이크 벤치, 도롱뇽 분수 — 방문 구역 사전 예약 필요' },
+        { time: '', category: '관광', title: '까사 밀라(La Pedrera) · 까사 바뜨요(Casa Batlló)', notes: '가우디 투어 클라이맥스 — 두 건물 모두 내부 투어 가능, 야간 조명 투어도 추천' },
+        { time: '', category: '식사', title: '점심식사', notes: '그라시아 거리 인근 카탈루냐 요리' },
+        { time: '', category: '관광', title: '시우타데야 공원 & 바르셀로네타 해변', notes: '3주 여행 마무리 — 팀원들과 감상 나누며 사유하는 시간' },
+        { time: '18:00', category: '식사', title: '이른 저녁식사', notes: '바르셀로나 마지막 식사 — 판 콘 토마테, 해산물 등 카탈루냐 요리' },
+        { time: '20:50', category: '교통', title: '바르셀로나 공항 출발 — 귀국', notes: '아시아나항공 BCN→ICN / 다음날(8월 8일) 16:20 인천공항 도착' },
+      ],
+    },
+  ];
+
+  const trip = {
+    id: uid(),
+    title: TITLE,
+    destination: '스페인 · 모로코',
+    startDate: '2026-07-17',
+    endDate: '2026-08-07',
+    color: '#f0a060',
+    days: days.map(d => ({
+      date: d.date,
+      activities: d.activities.map(a => ({ id: uid(), ...a })),
+    })),
+  };
+
+  trips.unshift(trip);
+  saveTrips();
+}
+
+seedSaharaTrip();
 renderTripList();
