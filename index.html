@@ -164,12 +164,22 @@
         <div class="form-row">
           <div class="form-group">
             <label for="trip-start">출발일</label>
-            <input type="date" id="trip-start">
+            <div class="date-input-wrap">
+              <input type="text" id="trip-start" placeholder="2026-07-17" autocomplete="off" maxlength="10">
+              <button type="button" class="cal-icon-btn" id="cal-btn-start" aria-label="달력에서 선택">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="1.5" x2="5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="10" y1="1.5" x2="10" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
             <span class="field-error" id="err-trip-start"></span>
           </div>
           <div class="form-group">
             <label for="trip-end">도착일</label>
-            <input type="date" id="trip-end">
+            <div class="date-input-wrap">
+              <input type="text" id="trip-end" placeholder="2026-08-07" autocomplete="off" maxlength="10">
+              <button type="button" class="cal-icon-btn" id="cal-btn-end" aria-label="달력에서 선택">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="1.5" x2="5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="10" y1="1.5" x2="10" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
             <span class="field-error" id="err-trip-end"></span>
           </div>
         </div>
