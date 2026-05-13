@@ -3,59 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>내 홈페이지</title>
+  <title>여행 플래너</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header>
     <nav>
-      <div class="logo">MyPage</div>
-      <ul>
-        <li><a href="#">홈</a></li>
-        <li><a href="#">소개</a></li>
-        <li><a href="#">연락처</a></li>
-      </ul>
+      <div class="logo" id="nav-logo">✈ 여행 플래너</div>
+      <div class="nav-right">
+        <span class="breadcrumb" id="nav-breadcrumb"></span>
+        <button class="btn-outline btn-sm" id="nav-back" style="display:none">← 목록으로</button>
+      </div>
     </nav>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-text">
-        <p class="label">HELLO WORLD</p>
-        <h1>안녕하세요,<br>저의 홈페이지입니다</h1>
-        <p class="sub">이 페이지는 GitHub Pages 배포 테스트용 샘플입니다.<br>HTML · CSS · JS 세 파일로 구성되어 있어요.</p>
-        <button id="cta-btn">클릭해보세요 ✦</button>
+    <section id="view-list" class="view active">
+      <div class="view-header">
+        <div>
+          <p class="label">MY TRIPS</p>
+          <h1>나의 여행 일정</h1>
+        </div>
+        <button class="btn-primary" id="btn-new-trip">+ 새 여행 추가</button>
       </div>
-      <div class="hero-deco" aria-hidden="true">
-        <div class="circle c1"></div>
-        <div class="circle c2"></div>
-        <div class="circle c3"></div>
+      <div class="trip-grid" id="trip-grid"></div>
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">✈️</div>
+        <h2>아직 여행 일정이 없어요</h2>
+        <p>새 여행을 추가하고 일정을 계획해보세요!</p>
+        <button class="btn-primary" id="btn-new-trip-empty">+ 첫 여행 추가하기</button>
       </div>
     </section>
 
-    <section class="cards">
-      <div class="card">
-        <span class="icon">📄</span>
-        <h2>HTML</h2>
-        <p>페이지의 구조와 콘텐츠를 정의합니다.</p>
+    <section id="view-trip" class="view">
+      <div class="trip-hero" id="trip-hero">
+        <div class="trip-hero-content">
+          <p class="label" id="trip-dest-label"></p>
+          <h1 id="trip-title-label"></h1>
+          <p class="trip-dates-label" id="trip-dates-label"></p>
+        </div>
+        <div class="trip-hero-actions">
+          <button class="btn-outline btn-sm" id="btn-edit-trip">수정</button>
+          <button class="btn-danger btn-sm" id="btn-delete-trip">삭제</button>
+        </div>
       </div>
-      <div class="card">
-        <span class="icon">🎨</span>
-        <h2>CSS</h2>
-        <p>색상, 폰트, 레이아웃 등 디자인을 담당합니다.</p>
+
+      <div class="day-tabs-wrapper">
+        <div class="day-tabs" id="day-tabs"></div>
       </div>
-      <div class="card">
-        <span class="icon">⚡</span>
-        <h2>JavaScript</h2>
-        <p>버튼 클릭 같은 동적 기능을 처리합니다.</p>
-      </div>
+
+      <div class="activities-panel" id="activities-panel"></div>
     </section>
   </main>
 
-  <footer>
-    <p>© 2024 내 홈페이지 · GitHub Pages 테스트</p>
-  </footer>
+  <div class="modal-overlay" id="modal-trip">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-trip-heading">새 여행 추가</h2>
+        <button class="modal-close" data-close="modal-trip">✕</button>
+      </div>
+      <form id="form-trip" novalidate>
+        <div class="form-group">
+          <label for="trip-name">여행 이름</label>
+          <input type="text" id="trip-name" placeholder="예: 여름 유럽 여행" autocomplete="off">
+          <span class="field-error" id="err-trip-name"></span>
+        </div>
+        <div class="form-group">
+          <label for="trip-destination">목적지</label>
+          <input type="text" id="trip-destination" placeholder="예: 파리, 프랑스" autocomplete="off">
+          <span class="field-error" id="err-trip-dest"></span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="trip-start">출발일</label>
+            <input type="date" id="trip-start">
+            <span class="field-error" id="err-trip-start"></span>
+          </div>
+          <div class="form-group">
+            <label for="trip-end">도착일</label>
+            <input type="date" id="trip-end">
+            <span class="field-error" id="err-trip-end"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>테마 색상</label>
+          <div class="color-picker" id="color-picker">
+            <button type="button" class="color-btn active" data-color="#c8f060" style="background:#c8f060" title="라임"></button>
+            <button type="button" class="color-btn" data-color="#f0a060" style="background:#f0a060" title="오렌지"></button>
+            <button type="button" class="color-btn" data-color="#60a0f0" style="background:#60a0f0" title="블루"></button>
+            <button type="button" class="color-btn" data-color="#c060f0" style="background:#c060f0" title="퍼플"></button>
+            <button type="button" class="color-btn" data-color="#f060a0" style="background:#f060a0" title="핑크"></button>
+            <button type="button" class="color-btn" data-color="#60f0c8" style="background:#60f0c8" title="민트"></button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" data-close="modal-trip">취소</button>
+          <button type="submit" class="btn-primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-activity">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-activity-heading">일정 추가</h2>
+        <button class="modal-close" data-close="modal-activity">✕</button>
+      </div>
+      <form id="form-activity" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="activity-time">시간 (선택)</label>
+            <input type="time" id="activity-time">
+          </div>
+          <div class="form-group">
+            <label for="activity-category">카테고리</label>
+            <select id="activity-category">
+              <option value="관광">🏛️ 관광</option>
+              <option value="식사">🍽️ 식사</option>
+              <option value="교통">🚌 교통</option>
+              <option value="숙박">🏨 숙박</option>
+              <option value="쇼핑">🛍️ 쇼핑</option>
+              <option value="기타">📌 기타</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="activity-title">제목</label>
+          <input type="text" id="activity-title" placeholder="예: 에펠탑 방문" autocomplete="off">
+          <span class="field-error" id="err-activity-title"></span>
+        </div>
+        <div class="form-group">
+          <label for="activity-notes">메모 (선택)</label>
+          <textarea id="activity-notes" placeholder="추가 정보를 입력하세요..." rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" data-close="modal-activity">취소</button>
+          <button type="submit" class="btn-primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>삭제 확인</h2>
+      </div>
+      <p class="confirm-msg" id="confirm-msg"></p>
+      <div class="modal-footer">
+        <button class="btn-outline" data-close="modal-confirm">취소</button>
+        <button class="btn-danger" id="btn-confirm-ok">삭제</button>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
