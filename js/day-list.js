@@ -5,6 +5,8 @@ import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
 
 let _scrollObserver = null;
+let _programmaticScroll = false;
+let _programmaticScrollTimer = null;
 
 function buildActivityHTML(act, date) {
   const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
@@ -76,12 +78,19 @@ export function renderDayTabs(trip) {
       </button>`;
   }).join('');
 
-  // 탭 클릭 → 해당 섹션으로 점프
+  // 탭 클릭 → 해당 섹션으로 점프 (스크롤 중 Observer 차단)
   tabsEl.querySelectorAll('.day-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const idx = parseInt(tab.dataset.day);
       state.currentDayIndex = idx;
       closeDetailPanel();
+      scrollTabTo(tabsEl, idx);
+
+      // Observer가 스크롤 중에 탭을 바꾸지 못하도록 차단
+      _programmaticScroll = true;
+      clearTimeout(_programmaticScrollTimer);
+      _programmaticScrollTimer = setTimeout(() => { _programmaticScroll = false; }, 900);
+
       const section = document.getElementById(`day-section-${idx}`);
       if (section) {
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -134,12 +143,16 @@ export function renderDayTabs(trip) {
 
   // sticky bar 높이만큼 rootMargin 위쪽 여백 제거
   _scrollObserver = new IntersectionObserver(entries => {
+    if (_programmaticScroll) return; // 탭 클릭 스크롤 중엔 무시
+
     // 화면에 가장 많이 보이는 섹션을 active로
     let best = null;
     entries.forEach(entry => {
-      if (!best || entry.intersectionRatio > best.intersectionRatio) best = entry;
+      if (entry.isIntersecting) {
+        if (!best || entry.intersectionRatio > best.intersectionRatio) best = entry;
+      }
     });
-    if (best?.isIntersecting) {
+    if (best) {
       const idx = parseInt(best.target.dataset.day);
       if (idx !== state.currentDayIndex) {
         state.currentDayIndex = idx;
