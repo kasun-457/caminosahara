@@ -333,18 +333,18 @@ h1 {
 
 /* ── 날짜 탭 ──────────────────────────────────────────────────────────── */
 .day-tabs-wrapper {
-  overflow-x: auto;
+  overflow: hidden;
   padding: 0 0 0.6rem;
-  scrollbar-width: none;
+  position: relative;
 }
-
-.day-tabs-wrapper::-webkit-scrollbar { display: none; }
 
 .day-tabs {
   display: flex;
   gap: 0.5rem;
   padding-bottom: 0.5rem;
   width: max-content;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .day-tab {

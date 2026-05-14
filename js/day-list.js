@@ -51,8 +51,12 @@ function scrollTabTo(tabsEl, idx) {
   const tab = tabsEl.querySelector(`.day-tab[data-day="${idx}"]`);
   if (!tab) return;
   tabsEl.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', t === tab));
+
+  const wrapper = tabsEl.closest('.day-tabs-wrapper');
+  const wrapperCenter = wrapper.clientWidth / 2;
   const tabCenter = tab.offsetLeft + tab.offsetWidth / 2;
-  tabsEl.scrollLeft = tabCenter - tabsEl.clientWidth / 2;
+  const tx = wrapperCenter - tabCenter;
+  tabsEl.style.transform = `translateX(${tx}px)`;
 }
 
 export function renderDayTabs(trip) {
