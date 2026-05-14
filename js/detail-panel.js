@@ -33,7 +33,26 @@ export function renderDetailPanelFields(category, details = {}) {
 
   const container = document.getElementById('dp-dynamic-fields');
   const fields = CATEGORY_FIELDS[category] || [];
-  container.innerHTML = fields.map(f => `
+  const isViewMode = getDetailMode() === 'view';
+
+  container.innerHTML = fields.map(f => {
+    const isUrl = f.key === 'url';
+    const val = details[f.key] || '';
+    // URL 필드 + 보기 모드: 하이퍼링크로 렌더링
+    if (isUrl && isViewMode) {
+      const linkContent = val
+        ? `<a href="${escapeHtml(val)}" target="_blank" rel="noopener noreferrer" class="dp-field-link">${escapeHtml(val)}</a>`
+        : `<span class="dp-field-empty">—</span>`;
+      return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div>${linkContent}</div>
+      </div>
+    </div>`;
+    }
+    return `
     <div class="dp-field-row">
       <span class="dp-field-icon">${f.icon}</span>
       <div class="dp-field-content">
@@ -41,12 +60,11 @@ export function renderDetailPanelFields(category, details = {}) {
         <div class="${PLACE_AC_KEYS.has(f.key) ? 'place-ac-wrap' : ''}">
           <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
                  placeholder="${escapeHtml(f.placeholder || '')}"
-                 value="${escapeHtml(details[f.key] || '')}" autocomplete="off">
+                 value="${escapeHtml(val)}" autocomplete="off">
         </div>
       </div>
-    </div>`).join('');
-
-  const isViewMode = getDetailMode() === 'view';
+    </div>`;
+  }).join('');
   container.querySelectorAll('.dp-field-input').forEach(inp => {
     if (isViewMode) inp.readOnly = true;
     inp.addEventListener('input', () => {

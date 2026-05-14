@@ -1711,6 +1711,24 @@ textarea { resize: vertical; min-height: 80px; }
   opacity: 1;
 }
 
+/* URL 하이퍼링크 */
+.dp-field-link {
+  color: var(--primary);
+  text-decoration: underline;
+  word-break: break-all;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: inline-block;
+  max-width: 100%;
+}
+.dp-field-link:hover {
+  color: var(--primary-dark, #1a56db);
+}
+.dp-field-empty {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.9rem;
+}
+
 /* 선택된 활동 카드 강조 */
 .activity-item.dp-active .activity-body {
   border-color: color-mix(in srgb, var(--trip-color, var(--accent)) 70%, var(--border));
