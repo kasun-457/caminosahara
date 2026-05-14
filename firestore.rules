@@ -12,7 +12,7 @@ service cloud.firestore {
     //  여행 문서. memberIds 배열에 포함된 사용자만 읽기/수정/삭제 가능.
     match /trips/{tripId} {
 
-      // 읽기 권한 분리:
+      // 읽기 권한 분리: 
       // list(전체 검색)는 기존 멤버만 가능하게 하여 목록 유출을 막고,
       // get(단일 조회)은 로그인한 사용자가 초대 링크의 tripId로 접근할 수 있게 허용합니다.
       allow list: if request.auth != null && request.auth.uid in resource.data.memberIds;
@@ -46,11 +46,8 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.memberIds.size() <= 20
         && (
-          // 1) 기존 멤버인 경우 자유롭게 수정 가능 (단 shareCode 는 잠금)
-          (
-            request.auth.uid in resource.data.memberIds
-            && request.resource.data.shareCode == resource.data.shareCode
-          )
+          // 1) 기존 멤버인 경우 자유롭게 수정 가능
+          request.auth.uid in resource.data.memberIds
           ||
           // 2) 아직 멤버가 아닌 경우: memberIds 배열에 오직 자신의 UID 하나만 추가하고 다른 필드는 변경 안 함
           (

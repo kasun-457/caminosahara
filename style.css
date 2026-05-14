@@ -2087,7 +2087,7 @@ textarea { resize: vertical; min-height: 80px; }
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
-  top: 56px;
+  top: 0;
   z-index: 20;
 }
 
@@ -2105,8 +2105,8 @@ textarea { resize: vertical; min-height: 80px; }
 
 .cal-col-header {
   flex: 1;
-  min-width: 140px;
-  padding: 0.55rem 0.6rem;
+  min-width: 90px;
+  padding: 0.55rem 0.4rem;
   border-left: 1px solid var(--border);
   text-align: center;
 }
@@ -2155,7 +2155,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .cal-allday-col {
   flex: 1;
-  min-width: 140px;
+  min-width: 90px;
   border-left: 1px solid var(--border);
   padding: 4px;
   display: flex;
@@ -2183,7 +2183,7 @@ textarea { resize: vertical; min-height: 80px; }
 .cal-body {
   display: flex;
   overflow-y: auto;
-  max-height: calc(100vh - 320px);
+  height: calc(100vh - 280px);
   min-height: 400px;
   position: relative;
 }
@@ -2224,7 +2224,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .cal-column {
   flex: 1;
-  min-width: 140px;
+  min-width: 90px;
   border-left: 1px solid var(--border);
   position: relative;
 }
