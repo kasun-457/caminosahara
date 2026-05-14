@@ -38,7 +38,10 @@ function buildDaySectionHTML(date, dayData, idx) {
   return `
     <section class="day-section" id="day-section-${idx}" data-day="${idx}" data-date="${date}">
       <div class="activities-header">
-        <h2 class="activities-date">${fmtDate(date)}</h2>
+        <div class="activities-date-group">
+          <span class="activities-day-badge">Day ${idx + 1}</span>
+          <h2 class="activities-date">${fmtDate(date)}</h2>
+        </div>
         <button class="btn-primary btn-sm btn-add-activity" data-date="${date}">+ 일정 추가</button>
       </div>
       <div class="timeline">
@@ -93,13 +96,19 @@ export function renderDayTabs(trip) {
 
       const section = document.getElementById(`day-section-${idx}`);
       if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const headerH  = document.querySelector('header')?.offsetHeight || 60;
+        const stickyH  = document.querySelector('.trip-sticky-bar')?.offsetHeight || 100;
+        const gap = 16;
+        const top = section.getBoundingClientRect().top + window.scrollY - headerH - stickyH - gap;
+        window.scrollTo({ top, behavior: 'smooth' });
       }
     });
   });
 
-  // 선택된 탭 가운데 정렬
-  scrollTabTo(tabsEl, state.currentDayIndex);
+  // 선택된 탭 가운데 정렬 — 레이아웃 완료 후 실행
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    scrollTabTo(tabsEl, state.currentDayIndex);
+  }));
 
   // ── 전체 일정 렌더 ────────────────────────────────────────────────────────
   panel.innerHTML = days.map((date, i) => {
@@ -166,13 +175,16 @@ export function renderDayTabs(trip) {
 
   panel.querySelectorAll('.day-section').forEach(sec => _scrollObserver.observe(sec));
 
-  // 초기 위치: 선택된 날짜로 스크롤 (렌더 직후 부드럽게)
-  requestAnimationFrame(() => {
+  // 초기 위치: 선택된 날짜로 즉시 이동
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     const section = document.getElementById(`day-section-${state.currentDayIndex}`);
     if (section && state.currentDayIndex > 0) {
-      section.scrollIntoView({ behavior: 'instant', block: 'start' });
+      const headerH = document.querySelector('header')?.offsetHeight || 60;
+      const stickyH = document.querySelector('.trip-sticky-bar')?.offsetHeight || 100;
+      const top = section.getBoundingClientRect().top + window.scrollY - headerH - stickyH - 16;
+      window.scrollTo({ top, behavior: 'instant' });
     }
-  });
+  }));
 }
 
 // 호환성 유지용 (calendar.js 등에서 호출하는 경우)
