@@ -6,16 +6,22 @@
         <p class="label">MY TRIPS</p>
         <h1>나의 여행 일정</h1>
       </div>
-      <button class="btn-primary" id="btn-new-trip">+ 새 여행 추가</button>
+      <div class="view-header-actions">
+        <!-- 정렬 드롭다운 -->
+        <div class="sort-dropdown" id="sort-dropdown">
+          <button class="btn-outline btn-sm sort-dropdown-btn" id="sort-dropdown-btn">
+            <span id="sort-label">최신 등록순</span> ▾
+          </button>
+          <div class="sort-dropdown-menu" id="sort-dropdown-menu">
+            <button class="sort-option active" data-sort="recent">최신 등록순</button>
+            <button class="sort-option" data-sort="startDate">여행 날짜순</button>
+            <button class="sort-option" data-sort="name">이름순</button>
+            <button class="sort-option" data-sort="manual">직접 정렬</button>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-new-trip">+ 새 여행 추가</button>
+      </div>
     </div>
-
-    <!-- 정렬 탭 -->
-    <div class="trip-sort-bar">
-      <button class="trip-sort-btn active" data-sort="recent">최신순</button>
-      <button class="trip-sort-btn" data-sort="name">이름순</button>
-      <button class="trip-sort-btn" data-sort="manual">직접정렬</button>
-    </div>
-
     <div class="trip-grid" id="trip-grid"></div>
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">✈️</div>
@@ -30,4 +36,3 @@
     <button class="trip-ctx-item" id="ctx-edit">✎ 수정</button>
     <button class="trip-ctx-item ctx-danger" id="ctx-delete">✕ 삭제</button>
   </div>
-</main>

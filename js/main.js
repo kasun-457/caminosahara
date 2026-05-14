@@ -9,7 +9,7 @@ import {
 } from './auth.js';
 import {
   openTripModal, saveTripForm, copyShareLink,
-  renderTripList, initContextMenu,
+  renderTripList, initContextMenu, initSortDropdown,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -83,13 +83,8 @@ async function init() {
   document.getElementById('form-delete-account').addEventListener('submit', submitDeleteAccount);
   document.getElementById('btn-logout').addEventListener('click', signOutUser);
 
-  // 정렬 탭
-  document.querySelectorAll('.trip-sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.tripSort = btn.dataset.sort;
-      renderTripList();
-    });
-  });
+  // 정렬 드롭다운
+  initSortDropdown();
 
   // 우클릭 컨텍스트 메뉴
   initContextMenu();

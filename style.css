@@ -140,31 +140,49 @@ h1 {
   letter-spacing: -0.01em;
 }
 
-/* ── 정렬 탭 ───────────────────────────────────────────────────────────── */
-.trip-sort-bar {
+/* ── 정렬 드롭다운 ─────────────────────────────────────────────────────── */
+.view-header-actions {
   display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sort-dropdown {
+  position: relative;
+}
+.sort-dropdown-btn {
+  display: flex;
+  align-items: center;
   gap: 0.4rem;
-  margin-bottom: 1.5rem;
+  white-space: nowrap;
 }
-.trip-sort-btn {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  padding: 0.35rem 0.9rem;
-  border-radius: 999px;
+.sort-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface);
   border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.4rem;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 200;
+  flex-direction: column;
+}
+.sort-dropdown-menu.open { display: flex; }
+.sort-option {
   background: transparent;
-  color: var(--muted);
+  border: none;
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.18s;
+  text-align: left;
+  transition: background 0.15s;
 }
-.trip-sort-btn:hover { color: var(--text); border-color: var(--muted); }
-.trip-sort-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #0b0b0d;
-  font-weight: 600;
-}
+.sort-option:hover { background: var(--surface2); }
+.sort-option.active { color: var(--accent); font-weight: 600; }
 
 /* ── 여행 카드 그리드 ──────────────────────────────────────────────────── */
 .trip-grid {

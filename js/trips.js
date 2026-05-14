@@ -13,10 +13,20 @@ function getManualOrder() {
 function saveManualOrder(ids) {
   localStorage.setItem(`tripOrder_${state.currentUser?.uid}`, JSON.stringify(ids));
 }
+const SORT_LABELS = {
+  recent:    '최신 등록순',
+  startDate: '여행 날짜순',
+  name:      '이름순',
+  manual:    '직접 정렬',
+};
+
 function sortedTrips() {
   const trips = [...state.trips];
   if (state.tripSort === 'name') {
     return trips.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+  }
+  if (state.tripSort === 'startDate') {
+    return trips.sort((a, b) => (b.startDate ?? '').localeCompare(a.startDate ?? ''));
   }
   if (state.tripSort === 'manual') {
     const order = getManualOrder();
@@ -31,6 +41,29 @@ function sortedTrips() {
   }
   // 'recent': createdAt 내림차순 (기본)
   return trips.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+}
+
+export function initSortDropdown() {
+  const btn  = document.getElementById('sort-dropdown-btn');
+  const menu = document.getElementById('sort-dropdown-menu');
+  if (!btn || !menu) return;
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+
+  menu.querySelectorAll('.sort-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      state.tripSort = opt.dataset.sort;
+      document.getElementById('sort-label').textContent = SORT_LABELS[state.tripSort];
+      menu.querySelectorAll('.sort-option').forEach(o => o.classList.toggle('active', o === opt));
+      menu.classList.remove('open');
+      renderTripList();
+    });
+  });
+
+  document.addEventListener('click', () => menu.classList.remove('open'));
 }
 
 export function subscribeToTrips() {
