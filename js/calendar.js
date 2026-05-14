@@ -48,9 +48,9 @@ export function renderGridView(trip) {
   const calEl = document.getElementById('cal-view');
   const allDates = getDays(trip.startDate, trip.endDate);
 
-  const count = state.calView === '3day' ? 3 : 1;
-  state.calDateOffset = Math.max(0, Math.min(state.calDateOffset, allDates.length - count));
-  const visibleDates = allDates.slice(state.calDateOffset, state.calDateOffset + count);
+  const count = 7;
+  state.calDateOffset = Math.max(0, Math.min(state.calDateOffset, allDates.length - 1));
+  const visibleDates = allDates.slice(state.calDateOffset, state.calDateOffset + count).filter(Boolean);
 
   updateCalPeriodLabel(trip, visibleDates, allDates);
 
@@ -264,12 +264,19 @@ export function renderMonthView(trip) {
     });
   });
 
-  // 빈 셀 클릭 → 일정 추가 (여행 기간 내에서만)
+  // 셀 클릭 → 해당 날짜의 목록 뷰로 이동 (여행 기간 내에서만)
   calEl.querySelectorAll('.cal-month-cell').forEach(cell => {
     if (cell.classList.contains('out-of-range')) return;
     cell.addEventListener('click', e => {
       if (e.target.closest('.cal-month-event')) return;
-      openActivityModal(null, cell.dataset.date);
+      const date = cell.dataset.date;
+      const trip = state.trips.find(t => t.id === state.currentTripId);
+      if (!trip) return;
+      const allDates = getDays(trip.startDate, trip.endDate);
+      const idx = allDates.indexOf(date);
+      if (idx < 0) return;
+      state.currentDayIndex = idx;
+      switchCalView('list');
     });
   });
 }
@@ -284,11 +291,10 @@ export function updateCalPeriodLabel(trip, visibleDates, allDates) {
   } else {
     label.textContent = `${fmtShort(visibleDates[0])} – ${fmtShort(visibleDates[visibleDates.length - 1])}`;
   }
-  const count = state.calView === '3day' ? 3 : 1;
   const prevBtn = document.getElementById('cal-prev-btn');
   const nextBtn = document.getElementById('cal-next-btn');
   if (prevBtn) prevBtn.disabled = state.calDateOffset <= 0 || state.calView === 'all';
-  if (nextBtn) nextBtn.disabled = state.calDateOffset + count >= allDates.length || state.calView === 'all';
+  if (nextBtn) nextBtn.disabled = state.calDateOffset + 7 >= allDates.length || state.calView === 'all';
 }
 
 // ── 드래그 & 리사이즈 ─────────────────────────────────────────────────────────
@@ -393,7 +399,6 @@ export function calNavigate(dir) {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   if (!trip) return;
   const allDates = getDays(trip.startDate, trip.endDate);
-  const step = state.calView === '3day' ? 3 : 1;
-  state.calDateOffset = Math.max(0, Math.min(state.calDateOffset + dir * step, allDates.length - step));
+  state.calDateOffset = Math.max(0, Math.min(state.calDateOffset + dir * 7, allDates.length - 1));
   renderGridView(trip);
 }
