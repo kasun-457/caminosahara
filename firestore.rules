@@ -12,12 +12,13 @@ service cloud.firestore {
     //  여행 문서. memberIds 배열에 포함된 사용자만 읽기/수정/삭제 가능.
     match /trips/{tripId} {
 
-      // 읽기: 멤버만 가능
-      allow read: if request.auth != null
-        && request.auth.uid in resource.data.memberIds;
+      // 읽기 권한 분리: 
+      // list(전체 검색)는 기존 멤버만 가능하게 하여 목록 유출을 막고,
+      // get(단일 조회)은 로그인한 사용자가 초대 링크의 tripId로 접근할 수 있게 허용합니다.
+      allow list: if request.auth != null && request.auth.uid in resource.data.memberIds;
+      allow get: if request.auth != null;
 
-      // 생성: 본인이 ownerId이고, 본인을 memberIds에 포함하며,
-      //       필수 필드를 모두 갖춘 경우만 허용
+      // 생성: 기존과 동일하게 유지
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.ownerId
         && request.auth.uid in request.resource.data.memberIds
@@ -39,21 +40,26 @@ service cloud.firestore {
         && request.resource.data.days is list
         && request.resource.data.shareCode is string;
 
-      // 수정: 멤버만 가능. ownerId·createdAt 변경 불가.
+      // 수정: 기존 멤버의 업데이트 허용 OR 새로운 멤버가 배열에 자신의 UID만 딱 추가하는 동작 허용
       allow update: if request.auth != null
-        && request.auth.uid in resource.data.memberIds
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.memberIds.size() <= 20;
+        && request.resource.data.memberIds.size() <= 20
+        && (
+          // 1) 기존 멤버인 경우 자유롭게 수정 가능
+          request.auth.uid in resource.data.memberIds
+          ||
+          // 2) 아직 멤버가 아닌 경우: memberIds 배열에 오직 자신의 UID 하나만 추가하는 경우만 승인
+          (
+            request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
+            request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1 &&
+            request.auth.uid in request.resource.data.memberIds
+          )
+        );
 
-      // 삭제: ownerId만 가능
+      // 삭제: 기존과 동일하게 방장(ownerId)만 가능
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.ownerId;
-    }
-
-    // 그 외 모든 문서 접근 차단
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }

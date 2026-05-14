@@ -1,0 +1,44 @@
+  <!-- 여행 상세 화면 -->
+  <section id="view-trip" class="view">
+    <div class="trip-hero" id="trip-hero">
+      <div class="trip-hero-content">
+        <p class="label" id="trip-dest-label"></p>
+        <h1 id="trip-title-label"></h1>
+        <p class="trip-dates-label" id="trip-dates-label"></p>
+      </div>
+      <div class="trip-hero-actions">
+        <button class="btn-outline btn-sm" id="btn-share-trip">🔗 초대</button>
+        <button class="btn-outline btn-sm" id="btn-edit-trip">수정</button>
+        <button class="btn-danger btn-sm" id="btn-delete-trip">삭제</button>
+      </div>
+    </div>
+
+    <!-- 뷰 전환 툴바 -->
+    <div class="cal-toolbar" id="cal-toolbar">
+      <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
+        <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
+        <span class="cal-period-label" id="cal-period-label"></span>
+        <button type="button" class="cal-nav-btn" id="cal-next-btn">›</button>
+      </div>
+      <div style="flex:1"></div>
+      <div class="cal-view-tabs">
+        <button type="button" class="cal-view-tab active" data-view="list">목록</button>
+        <button type="button" class="cal-view-tab" data-view="day">일</button>
+        <button type="button" class="cal-view-tab" data-view="3day">3일</button>
+        <button type="button" class="cal-view-tab" data-view="all">전체</button>
+      </div>
+    </div>
+
+    <!-- 목록 뷰 -->
+    <div id="list-view-tabs" class="day-tabs-wrapper">
+      <div class="day-tabs" id="day-tabs"></div>
+    </div>
+
+    <div id="trip-content-row">
+      <div class="activities-panel" id="activities-panel"></div>
+    </div>
+
+    <!-- 캘린더 그리드 뷰 -->
+    <div id="cal-view" style="display:none"></div>
+  </section>
+</main>
