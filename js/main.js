@@ -17,6 +17,7 @@ import {
 import {
   closeDetailPanel, saveDetailPanel,
   renderDetailPanelFields, updateDetailPanelMap,
+  setDetailMode, openDetailPanel,
 } from './detail-panel.js';
 import { renderActivityFormFields } from './activity-fields.js';
 import { switchCalView, calNavigate } from './calendar.js';
@@ -109,6 +110,12 @@ async function init() {
   // 상세 패널
   document.getElementById('dp-close').addEventListener('click', closeDetailPanel);
   document.getElementById('dp-save').addEventListener('click', saveDetailPanel);
+  document.getElementById('dp-edit').addEventListener('click', () => setDetailMode('edit'));
+  document.getElementById('dp-cancel').addEventListener('click', () => {
+    // 취소 → 원본 데이터로 다시 로드 후 보기 모드 전환
+    const { activityId, date } = state.detailContext;
+    if (activityId) openDetailPanel(activityId, date, 'view');
+  });
   document.getElementById('dp-category').addEventListener('change', e => {
     renderDetailPanelFields(e.target.value, {});
     updateDetailPanelMap(e.target.value, {});

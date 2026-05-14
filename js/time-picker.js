@@ -38,8 +38,8 @@ export class TimePicker {
     this.input.addEventListener('input', this._onInput);
   }
 
-  _onFocus()  { this.open(); }
-  _onClick(e) { e.stopPropagation(); this.open(); }
+  _onFocus()  { if (this.input.readOnly) return; this.open(); }
+  _onClick(e) { if (this.input.readOnly) return; e.stopPropagation(); this.open(); }
 
   _onInput() {
     // HH:MM 형태로 자동 포맷 (숫자만 입력 시 콜론 자동 삽입)

@@ -1673,6 +1673,44 @@ textarea { resize: vertical; min-height: 80px; }
 
 .dp-footer .btn-primary { flex: 1; text-align: center; }
 
+/* ── 보기 / 수정 모드 토글 ───────────────────────────────────────────────── */
+/* 기본은 보기 모드 — 수정 모드 전용 버튼 숨김 */
+.detail-panel[data-mode="view"] #dp-cancel,
+.detail-panel[data-mode="view"] #dp-save,
+.detail-panel:not([data-mode="edit"]) #dp-cancel,
+.detail-panel:not([data-mode="edit"]) #dp-save { display: none; }
+
+/* 수정 모드 — 보기 모드 전용 버튼 숨김 */
+.detail-panel[data-mode="edit"] #dp-edit,
+.detail-panel[data-mode="edit"] #dp-delete { display: none; }
+
+/* 보기 모드: 입력 필드를 일반 텍스트처럼 표시 */
+.detail-panel[data-mode="view"] .dp-title-input {
+  border-bottom-color: transparent;
+  cursor: default;
+}
+.detail-panel[data-mode="view"] .dp-field-input,
+.detail-panel[data-mode="view"] .dp-time-input,
+.detail-panel[data-mode="view"] .dp-notes-input {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+  color: var(--text);
+}
+.detail-panel[data-mode="view"] .dp-field-input::placeholder,
+.detail-panel[data-mode="view"] .dp-notes-input::placeholder,
+.detail-panel[data-mode="view"] .dp-time-input::placeholder {
+  color: transparent;
+}
+/* 비활성화된 select 도 보기 모드에서 자연스럽게 */
+.detail-panel[data-mode="view"] .dp-cat-select:disabled {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+  cursor: default;
+  opacity: 1;
+}
+
 /* 선택된 활동 카드 강조 */
 .activity-item.dp-active .activity-body {
   border-color: color-mix(in srgb, var(--trip-color, var(--accent)) 70%, var(--border));

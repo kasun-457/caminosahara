@@ -4,6 +4,29 @@ import { CATEGORY_FIELDS, PLACE_AC_KEYS } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
 
+// ── 보기 / 수정 모드 전환 ─────────────────────────────────────────────────────
+//  mode: 'view' | 'edit'
+export function setDetailMode(mode) {
+  const panel = document.getElementById('detail-panel');
+  if (!panel) return;
+  panel.dataset.mode = mode;
+  const ro = mode === 'view';
+
+  document.getElementById('dp-title').readOnly    = ro;
+  document.getElementById('dp-notes').readOnly    = ro;
+  document.getElementById('dp-time').readOnly     = ro;
+  document.getElementById('dp-end-time').readOnly = ro;
+  document.getElementById('dp-category').disabled = ro;
+
+  document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
+    el.readOnly = ro;
+  });
+}
+
+export function getDetailMode() {
+  return document.getElementById('detail-panel')?.dataset.mode || 'view';
+}
+
 export function renderDetailPanelFields(category, details = {}) {
   state.dpAutocompletes.forEach(ac => ac.destroy());
   state.dpAutocompletes = [];
@@ -23,7 +46,9 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`).join('');
 
+  const isViewMode = getDetailMode() === 'view';
   container.querySelectorAll('.dp-field-input').forEach(inp => {
+    if (isViewMode) inp.readOnly = true;
     inp.addEventListener('input', () => {
       updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
     });
@@ -69,12 +94,15 @@ export function updateDetailPanelMap(category, details) {
   }
 }
 
-export function openDetailPanel(activityId, date) {
+export function openDetailPanel(activityId, date, mode = 'view') {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   const dayData = trip?.days.find(d => d.date === date);
   const act = dayData?.activities.find(a => a.id === activityId);
   if (!act) return;
   state.detailContext = { activityId, date };
+
+  // 모드를 먼저 지정 (이후 렌더링·readOnly 적용에 사용됨)
+  setDetailMode(mode);
 
   document.getElementById('dp-category').value = act.category;
   document.getElementById('dp-time').value = act.time || '';
@@ -84,6 +112,9 @@ export function openDetailPanel(activityId, date) {
   document.getElementById('dp-notes').value = act.notes || '';
   renderDetailPanelFields(act.category, act.details || {});
   updateDetailPanelMap(act.category, act.details || {});
+
+  // 동적 필드까지 그린 뒤 readOnly 상태 확정
+  setDetailMode(mode);
 
   document.querySelectorAll('.activity-item.dp-active').forEach(el => el.classList.remove('dp-active'));
   const activeItem = document.querySelector(`.activity-item[data-id="${activityId}"]`);
@@ -132,6 +163,7 @@ export async function saveDetailPanel() {
   try {
     await db.collection('trips').doc(state.currentTripId).update({ days: updatedDays });
     showToast('저장됐습니다 ✓');
+    setDetailMode('view');  // 저장 성공 → 보기 모드로 복귀
   } catch (err) {
     console.error(err);
     showToast('저장에 실패했습니다.');

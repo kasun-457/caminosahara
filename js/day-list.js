@@ -81,7 +81,7 @@ export function renderActivities(trip, date) {
   });
 
   panel.querySelectorAll('.btn-edit-act').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); openDetailPanel(btn.dataset.id, date); });
+    btn.addEventListener('click', e => { e.stopPropagation(); openDetailPanel(btn.dataset.id, date, 'edit'); });
   });
 
   panel.querySelectorAll('.btn-del-act').forEach(btn => {
