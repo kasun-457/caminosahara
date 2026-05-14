@@ -334,8 +334,7 @@ h1 {
 /* ── 날짜 탭 ──────────────────────────────────────────────────────────── */
 .day-tabs-wrapper {
   overflow-x: auto;
-  margin: 0 -2rem;
-  padding: 0 2rem 0.4rem;
+  padding: 0 0 0.6rem;
   scrollbar-width: none;
 }
 
@@ -407,7 +406,7 @@ h1 {
 }
 
 /* ── 활동 패널 ────────────────────────────────────────────────────────── */
-.activities-panel { margin-top: 2rem; }
+.activities-panel { margin-top: 1.5rem; }
 
 .activities-header {
   display: flex;
@@ -1877,6 +1876,15 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 /* ── 뷰 전환 툴바 ─────────────────────────────────────────────────────── */
+.trip-sticky-bar {
+  position: sticky;
+  top: 60px; /* 상단 header 높이만큼 오프셋 */
+  z-index: 80;
+  background: var(--bg);
+  margin: 0 -2rem;
+  padding: 0 2rem;
+}
+
 .cal-toolbar {
   display: flex;
   align-items: center;

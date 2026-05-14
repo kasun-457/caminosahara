@@ -13,24 +13,26 @@
       </div>
     </div>
 
-    <!-- 뷰 전환 툴바 -->
-    <div class="cal-toolbar" id="cal-toolbar">
-      <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
-        <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
-        <span class="cal-period-label" id="cal-period-label"></span>
-        <button type="button" class="cal-nav-btn" id="cal-next-btn">›</button>
+    <!-- sticky: 뷰 전환 툴바 + 날짜 탭 -->
+    <div class="trip-sticky-bar">
+      <div class="cal-toolbar" id="cal-toolbar">
+        <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
+          <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
+          <span class="cal-period-label" id="cal-period-label"></span>
+          <button type="button" class="cal-nav-btn" id="cal-next-btn">›</button>
+        </div>
+        <div style="flex:1"></div>
+        <div class="cal-view-tabs">
+          <button type="button" class="cal-view-tab active" data-view="list">일</button>
+          <button type="button" class="cal-view-tab" data-view="week">주</button>
+          <button type="button" class="cal-view-tab" data-view="all">전체</button>
+        </div>
       </div>
-      <div style="flex:1"></div>
-      <div class="cal-view-tabs">
-        <button type="button" class="cal-view-tab active" data-view="list">일</button>
-        <button type="button" class="cal-view-tab" data-view="week">주</button>
-        <button type="button" class="cal-view-tab" data-view="all">전체</button>
-      </div>
-    </div>
 
-    <!-- 목록 뷰 -->
-    <div id="list-view-tabs" class="day-tabs-wrapper">
-      <div class="day-tabs" id="day-tabs"></div>
+      <!-- 목록 뷰 날짜 탭 -->
+      <div id="list-view-tabs" class="day-tabs-wrapper">
+        <div class="day-tabs" id="day-tabs"></div>
+      </div>
     </div>
 
     <div id="trip-content-row">

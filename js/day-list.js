@@ -27,6 +27,13 @@ export function renderDayTabs(trip) {
     });
   });
 
+  // 선택된 탭을 항상 가운데로 스크롤
+  const activeTab = tabsEl.querySelector('.day-tab.active');
+  if (activeTab) {
+    const tabCenter = activeTab.offsetLeft + activeTab.offsetWidth / 2;
+    tabsEl.scrollLeft = tabCenter - tabsEl.clientWidth / 2;
+  }
+
   renderActivities(trip, days[state.currentDayIndex]);
 }
 
