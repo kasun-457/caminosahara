@@ -3,6 +3,78 @@ import { db } from './firebase.js';
 import { CATEGORY_FIELDS, PLACE_AC_KEYS } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
+import {
+  renderAttachmentsSection, uploadAttachment, deleteAttachment, ATTACHABLE_CATEGORIES,
+} from './attachments.js';
+
+// 첨부 섹션 (보기/수정 모드 모두) 렌더 + 이벤트 바인딩
+function renderAndBindAttachments() {
+  const container = document.getElementById('dp-attachments');
+  if (!container) return;
+  const { activityId, date } = state.detailContext;
+  const category = document.getElementById('dp-category').value;
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  const dayData = trip?.days.find(d => d.date === date);
+  const act = dayData?.activities.find(a => a.id === activityId);
+  const attachments = act?.attachments || [];
+
+  const isViewMode = getDetailMode() === 'view';
+  container.innerHTML = renderAttachmentsSection(category, attachments, isViewMode);
+
+  if (!ATTACHABLE_CATEGORIES.has(category) || isViewMode) return;
+
+  // 업로드 버튼
+  const btn = document.getElementById('dp-att-btn');
+  const input = document.getElementById('dp-att-input');
+  const progressWrap = document.getElementById('dp-att-progress');
+  const progressBar = document.getElementById('dp-att-progress-bar');
+  if (btn && input) {
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+      const files = Array.from(input.files || []);
+      input.value = '';
+      if (files.length === 0) return;
+      btn.disabled = true;
+      progressWrap.style.display = 'block';
+      try {
+        for (const f of files) {
+          progressBar.style.width = '0%';
+          await uploadAttachment(f, state.currentTripId, date, activityId, pct => {
+            progressBar.style.width = pct + '%';
+          });
+        }
+        showToast('파일이 업로드됐습니다 ✓');
+      } catch (err) {
+        console.error(err);
+        showToast('업로드에 실패했습니다.');
+      } finally {
+        btn.disabled = false;
+        progressWrap.style.display = 'none';
+        progressBar.style.width = '0%';
+        // Firestore onSnapshot이 trip을 갱신하면 다시 렌더 → 여기서는 즉시 한 번 갱신
+        renderAndBindAttachments();
+      }
+    });
+  }
+
+  // 삭제 버튼
+  container.querySelectorAll('.dp-att-del').forEach(b => {
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const fileId = b.dataset.id;
+      b.disabled = true;
+      try {
+        await deleteAttachment(state.currentTripId, date, activityId, fileId);
+        renderAndBindAttachments();
+      } catch (err) {
+        console.error(err);
+        showToast('삭제에 실패했습니다.');
+        b.disabled = false;
+      }
+    });
+  });
+}
 
 // ── 보기 / 수정 모드 전환 ─────────────────────────────────────────────────────
 //  mode: 'view' | 'edit'
@@ -21,6 +93,8 @@ export function setDetailMode(mode) {
   document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
     el.readOnly = ro;
   });
+  // 첨부 섹션도 모드에 맞춰 다시 렌더
+  if (state.detailContext?.activityId) renderAndBindAttachments();
 }
 
 export function getDetailMode() {
@@ -30,6 +104,10 @@ export function getDetailMode() {
 export function renderDetailPanelFields(category, details = {}) {
   state.dpAutocompletes.forEach(ac => ac.destroy());
   state.dpAutocompletes = [];
+  // 카테고리에 따라 첨부 가능 여부가 달라지므로 함께 갱신
+  if (state.detailContext?.activityId) {
+    queueMicrotask(() => renderAndBindAttachments());
+  }
 
   const container = document.getElementById('dp-dynamic-fields');
   const fields = CATEGORY_FIELDS[category] || [];
@@ -130,6 +208,7 @@ export function openDetailPanel(activityId, date, mode = 'view') {
   document.getElementById('dp-notes').value = act.notes || '';
   renderDetailPanelFields(act.category, act.details || {});
   updateDetailPanelMap(act.category, act.details || {});
+  renderAndBindAttachments();
 
   // 동적 필드까지 그린 뒤 readOnly 상태 확정
   setDetailMode(mode);

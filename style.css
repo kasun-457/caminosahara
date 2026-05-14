@@ -1711,6 +1711,97 @@ textarea { resize: vertical; min-height: 80px; }
   opacity: 1;
 }
 
+/* ── 첨부파일 (예약 정보 PDF/이미지) ─────────────────────────────────────── */
+.dp-att-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.dp-att-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.dp-att-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.dp-att-item:hover { background: var(--surface-hover, #f3f4f6); }
+.dp-att-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+.dp-att-icon { font-size: 1.1rem; flex-shrink: 0; }
+.dp-att-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dp-att-size {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.dp-att-del {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.dp-att-del:hover { background: #fee2e2; color: #dc2626; }
+.dp-att-empty {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
+.dp-att-upload {
+  margin-top: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.dp-att-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #9ca3af);
+}
+.dp-att-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--border, #e5e7eb);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+.dp-att-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--primary, #3b82f6);
+  transition: width 0.2s;
+}
+/* 보기 모드에서는 업로드 UI 숨김 (혹시 남아있을 경우 안전망) */
+.detail-panel[data-mode="view"] .dp-att-upload { display: none; }
+
 /* URL 하이퍼링크 */
 .dp-field-link {
   color: var(--primary);

@@ -3,6 +3,7 @@ import { db } from './firebase.js';
 import { uid, showToast, openModal, closeModal } from './utils.js';
 import { renderActivityFormFields, gatherActivityDetails } from './activity-fields.js';
 import { closeDetailPanel } from './detail-panel.js';
+import { purgeActivityAttachments } from './attachments.js';
 
 export function openActivityModal(activityId, date, presetTime) {
   state.editingActivityId = activityId;
@@ -77,9 +78,15 @@ export async function deleteActivity(tripId, date, actId) {
   const trip = state.trips.find(t => t.id === tripId);
   const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
-  if (dayData) dayData.activities = dayData.activities.filter(a => a.id !== actId);
+  let removedAttachments = [];
+  if (dayData) {
+    const removed = dayData.activities.find(a => a.id === actId);
+    if (removed?.attachments) removedAttachments = removed.attachments;
+    dayData.activities = dayData.activities.filter(a => a.id !== actId);
+  }
   try {
     await db.collection('trips').doc(tripId).update({ days: updatedDays });
+    if (removedAttachments.length) purgeActivityAttachments(removedAttachments);
   } catch (err) {
     console.error(err);
     showToast('삭제에 실패했습니다.');
@@ -88,6 +95,14 @@ export async function deleteActivity(tripId, date, actId) {
 
 export async function deleteTrip(tripId) {
   try {
+    // 모든 활동의 첨부파일 수집 → Storage에서 삭제
+    const trip = state.trips.find(t => t.id === tripId);
+    const allAttachments = [];
+    trip?.days?.forEach(d => d.activities?.forEach(a => {
+      if (a.attachments?.length) allAttachments.push(...a.attachments);
+    }));
+    if (allAttachments.length) purgeActivityAttachments(allAttachments);
+
     await db.collection('trips').doc(tripId).delete();
     goBack();
   } catch (err) {
