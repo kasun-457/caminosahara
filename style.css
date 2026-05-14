@@ -408,6 +408,17 @@ h1 {
 /* ── 활동 패널 ────────────────────────────────────────────────────────── */
 .activities-panel { margin-top: 1.5rem; }
 
+.day-section {
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+  scroll-margin-top: 140px; /* sticky bar 높이 보정 */
+}
+.day-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
 .activities-header {
   display: flex;
   align-items: center;
