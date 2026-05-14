@@ -131,14 +131,17 @@ export function renderAttachmentsSection(category, attachments = [], isViewMode)
     <div class="dp-att-upload">
       <input type="file" id="dp-att-input" accept="${ACCEPT_TYPES}" multiple style="display:none">
       <button type="button" class="btn-outline btn-sm" id="dp-att-btn">📎 파일 추가</button>
-      <span class="dp-att-hint">PDF · 이미지 (최대 10MB)</span>
+      <span class="dp-att-hint">클릭 또는 드래그&드롭 · PDF·이미지 (최대 10MB)</span>
       <div class="dp-att-progress" id="dp-att-progress" style="display:none">
         <div class="dp-att-progress-bar" id="dp-att-progress-bar"></div>
+      </div>
+      <div class="dp-att-drop-overlay" id="dp-att-drop-overlay">
+        <div class="dp-att-drop-msg">📥 여기에 파일을 놓으세요</div>
       </div>
     </div>`;
 
   return `
-    <div class="dp-att-section">
+    <div class="dp-att-section${isViewMode ? '' : ' dp-att-droppable'}" id="dp-att-section">
       <span class="dp-section-label">📎 예약 정보 파일</span>
       <ul class="dp-att-list">${items}${emptyMsg}</ul>
       ${uploadUi}

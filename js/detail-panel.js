@@ -23,37 +23,71 @@ function renderAndBindAttachments() {
 
   if (!ATTACHABLE_CATEGORIES.has(category) || isViewMode) return;
 
-  // 업로드 버튼
   const btn = document.getElementById('dp-att-btn');
   const input = document.getElementById('dp-att-input');
   const progressWrap = document.getElementById('dp-att-progress');
   const progressBar = document.getElementById('dp-att-progress-bar');
+  const section = document.getElementById('dp-att-section');
+  const dropOverlay = document.getElementById('dp-att-drop-overlay');
+
+  // 파일 목록 업로드 공통 로직
+  async function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    btn.disabled = true;
+    progressWrap.style.display = 'block';
+    try {
+      for (const f of files) {
+        progressBar.style.width = '0%';
+        await uploadAttachment(f, state.currentTripId, date, activityId, pct => {
+          progressBar.style.width = pct + '%';
+        });
+      }
+      showToast('파일이 업로드됐습니다 ✓');
+    } catch (err) {
+      console.error(err);
+      showToast('업로드에 실패했습니다.');
+    } finally {
+      btn.disabled = false;
+      progressWrap.style.display = 'none';
+      progressBar.style.width = '0%';
+      renderAndBindAttachments();
+    }
+  }
+
+  // 클릭 업로드
   if (btn && input) {
     btn.addEventListener('click', () => input.click());
-    input.addEventListener('change', async () => {
+    input.addEventListener('change', () => {
       const files = Array.from(input.files || []);
       input.value = '';
-      if (files.length === 0) return;
-      btn.disabled = true;
-      progressWrap.style.display = 'block';
-      try {
-        for (const f of files) {
-          progressBar.style.width = '0%';
-          await uploadAttachment(f, state.currentTripId, date, activityId, pct => {
-            progressBar.style.width = pct + '%';
-          });
-        }
-        showToast('파일이 업로드됐습니다 ✓');
-      } catch (err) {
-        console.error(err);
-        showToast('업로드에 실패했습니다.');
-      } finally {
-        btn.disabled = false;
-        progressWrap.style.display = 'none';
-        progressBar.style.width = '0%';
-        // Firestore onSnapshot이 trip을 갱신하면 다시 렌더 → 여기서는 즉시 한 번 갱신
-        renderAndBindAttachments();
-      }
+      handleFiles(files);
+    });
+  }
+
+  // 드래그&드롭 업로드
+  if (section) {
+    let depth = 0; // dragenter/leave가 자식 요소에서도 발생하므로 카운트
+    section.addEventListener('dragenter', e => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+      depth++;
+      section.classList.add('dp-att-drag-over');
+    });
+    section.addEventListener('dragover', e => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    section.addEventListener('dragleave', () => {
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) section.classList.remove('dp-att-drag-over');
+    });
+    section.addEventListener('drop', e => {
+      if (!e.dataTransfer?.files?.length) return;
+      e.preventDefault();
+      depth = 0;
+      section.classList.remove('dp-att-drag-over');
+      handleFiles(Array.from(e.dataTransfer.files));
     });
   }
 

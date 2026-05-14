@@ -1802,6 +1802,36 @@ textarea { resize: vertical; min-height: 80px; }
 /* 보기 모드에서는 업로드 UI 숨김 (혹시 남아있을 경우 안전망) */
 .detail-panel[data-mode="view"] .dp-att-upload { display: none; }
 
+/* 드래그&드롭 영역 */
+.dp-att-droppable {
+  position: relative;
+  border-radius: 8px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.dp-att-drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(59, 130, 246, 0.08);
+  border: 2px dashed var(--primary, #3b82f6);
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+.dp-att-drop-msg {
+  background: var(--surface, #fff);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--primary, #3b82f6);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.dp-att-droppable.dp-att-drag-over .dp-att-drop-overlay {
+  display: flex;
+}
+
 /* URL 하이퍼링크 */
 .dp-field-link {
   color: var(--primary);
