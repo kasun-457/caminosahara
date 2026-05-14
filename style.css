@@ -1730,22 +1730,24 @@ textarea { resize: vertical; min-height: 80px; }
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: var(--surface-2, #f9fafb);
-  border: 1px solid var(--border, #e5e7eb);
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   transition: background 0.15s;
 }
-.dp-att-item:hover { background: var(--surface-hover, #f3f4f6); }
+.dp-att-item:hover { background: #e5e7eb; }
 .dp-att-link {
   flex: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   text-decoration: none;
-  color: var(--text);
+  color: #111827;
   font-size: 0.9rem;
+  font-weight: 500;
   min-width: 0;
 }
+.dp-att-link:hover { color: #2563eb; }
 .dp-att-icon { font-size: 1.1rem; flex-shrink: 0; }
 .dp-att-name {
   flex: 1;
@@ -1754,7 +1756,7 @@ textarea { resize: vertical; min-height: 80px; }
   text-overflow: ellipsis;
 }
 .dp-att-size {
-  color: var(--text-muted, #9ca3af);
+  color: #6b7280;
   font-size: 0.8rem;
   flex-shrink: 0;
 }
