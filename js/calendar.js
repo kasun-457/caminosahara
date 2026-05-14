@@ -39,17 +39,18 @@ export async function updateActivityFields(actId, date, updates) {
 
 // ── 그리드 뷰 렌더링 ──────────────────────────────────────────────────────────
 export function renderGridView(trip) {
+  // 전체 뷰는 월 단위 캘린더로 렌더
+  if (state.calView === 'all') {
+    renderMonthView(trip);
+    return;
+  }
+
   const calEl = document.getElementById('cal-view');
   const allDates = getDays(trip.startDate, trip.endDate);
 
-  let visibleDates;
-  if (state.calView === 'all') {
-    visibleDates = allDates;
-  } else {
-    const count = state.calView === '3day' ? 3 : 1;
-    state.calDateOffset = Math.max(0, Math.min(state.calDateOffset, allDates.length - count));
-    visibleDates = allDates.slice(state.calDateOffset, state.calDateOffset + count);
-  }
+  const count = state.calView === '3day' ? 3 : 1;
+  state.calDateOffset = Math.max(0, Math.min(state.calDateOffset, allDates.length - count));
+  const visibleDates = allDates.slice(state.calDateOffset, state.calDateOffset + count);
 
   updateCalPeriodLabel(trip, visibleDates, allDates);
 
@@ -164,6 +165,111 @@ export function renderGridView(trip) {
       const relY = e.clientY - rect.top + calBody.scrollTop;
       const min = Math.round(pxToMinutes(relY) / 15) * 15;
       openActivityModal(null, col.dataset.date, minutesToTimeStr(min));
+    });
+  });
+}
+
+// ── 월 단위 캘린더 뷰 (구글 캘린더 스타일) ────────────────────────────────────
+function dateToStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function renderMonthView(trip) {
+  const calEl = document.getElementById('cal-view');
+  const allDates = getDays(trip.startDate, trip.endDate);
+  const tripStart = new Date(trip.startDate + 'T00:00:00');
+  const tripEnd   = new Date(trip.endDate   + 'T00:00:00');
+
+  // 그리드 시작: 여행 시작일이 포함된 주의 일요일
+  const gridStart = new Date(tripStart);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  // 그리드 끝: 여행 종료일이 포함된 주의 토요일
+  const gridEnd = new Date(tripEnd);
+  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+
+  // 모든 셀 날짜 생성
+  const cells = [];
+  for (const d = new Date(gridStart); d <= gridEnd; d.setDate(d.getDate() + 1)) {
+    cells.push(dateToStr(d));
+  }
+
+  updateCalPeriodLabel(trip, allDates, allDates);
+
+  const todayStr = dateToStr(new Date());
+
+  const weekdaysHTML = ['일', '월', '화', '수', '목', '금', '토']
+    .map((w, i) => {
+      let cls = 'cal-month-weekday';
+      if (i === 0) cls += ' sun';
+      if (i === 6) cls += ' sat';
+      return `<div class="${cls}">${w}</div>`;
+    }).join('');
+
+  const cellsHTML = cells.map(date => {
+    const dateObj = new Date(date + 'T00:00:00');
+    const inTrip = date >= trip.startDate && date <= trip.endDate;
+    const isToday = date === todayStr;
+    const dow = dateObj.getDay();
+
+    let cls = 'cal-month-cell';
+    if (!inTrip)  cls += ' out-of-range';
+    if (isToday)  cls += ' is-today';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+
+    const tripDayIdx = allDates.indexOf(date);
+    const dayLabel = tripDayIdx >= 0
+      ? `<span class="cal-month-trip-day">Day ${tripDayIdx + 1}</span>`
+      : '';
+
+    const dayData = trip.days.find(d => d.date === date) || { activities: [] };
+    const sorted = [...dayData.activities].sort((a, b) => {
+      if (!a.time && !b.time) return 0;
+      if (!a.time) return 1;
+      if (!b.time) return -1;
+      return a.time.localeCompare(b.time);
+    });
+
+    const eventsHTML = sorted.map(act => {
+      const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
+      const timeLabel = act.time ? `<span class="cal-month-event-time">${act.time}</span>` : '';
+      return `<div class="cal-month-event" data-id="${act.id}" data-date="${date}"
+                   style="--ecolor:${cat.color}">
+                <span class="cal-month-event-dot" style="background:${cat.color}"></span>
+                ${timeLabel}
+                <span class="cal-month-event-title">${escapeHtml(act.title)}</span>
+              </div>`;
+    }).join('');
+
+    return `<div class="${cls}" data-date="${date}">
+      <div class="cal-month-cell-header">
+        <span class="cal-month-day-num">${dateObj.getDate()}</span>
+        ${dayLabel}
+      </div>
+      <div class="cal-month-events">${eventsHTML}</div>
+    </div>`;
+  }).join('');
+
+  calEl.innerHTML = `
+    <div class="cal-month-view">
+      <div class="cal-month-weekdays">${weekdaysHTML}</div>
+      <div class="cal-month-grid">${cellsHTML}</div>
+    </div>`;
+
+  // 이벤트 클릭 → 상세 패널
+  calEl.querySelectorAll('.cal-month-event').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      openDetailPanel(el.dataset.id, el.dataset.date);
+    });
+  });
+
+  // 빈 셀 클릭 → 일정 추가 (여행 기간 내에서만)
+  calEl.querySelectorAll('.cal-month-cell').forEach(cell => {
+    if (cell.classList.contains('out-of-range')) return;
+    cell.addEventListener('click', e => {
+      if (e.target.closest('.cal-month-event')) return;
+      openActivityModal(null, cell.dataset.date);
     });
   });
 }
