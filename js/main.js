@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { closeModal } from './utils.js';
 import { DatePicker } from './date-picker.js';
+import { attachTimePickers } from './time-picker.js';
 import {
   setAuthMode, signInWithGoogle, submitAuthForm, signOutUser,
   openDeleteAccountModal, submitDeleteAccount,
@@ -50,6 +51,13 @@ async function init() {
   );
   state.startPicker.options.partnerPicker = state.endPicker;
   state.endPicker.options.partnerPicker   = state.startPicker;
+
+  // TimePicker 부착 (일정 모달 + 상세 패널)
+  attachTimePickers(
+    document.getElementById('activity-time'),
+    document.getElementById('dp-time'),
+    document.getElementById('dp-end-time'),
+  );
 
   // ── 이벤트 리스너 ───────────────────────────────────────────────────────────
 
