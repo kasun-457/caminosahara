@@ -87,13 +87,10 @@ export function renderGridView(trip) {
     const dayData = trip.days.find(d => d.date === date) || { activities: [] };
     const eventsHTML = dayData.activities.filter(a => a.time).map(act => {
       const startMin = timeToMinutes(act.time);
-      const endMin   = act.endTime ? timeToMinutes(act.endTime) : startMin + 60;
-      const dur  = Math.max(endMin - startMin, 15);
       const top  = minutesToPx(startMin);
-      const h    = Math.max(minutesToPx(dur), 22);
       const cat  = CATEGORIES[act.category] || CATEGORIES['기타'];
       return `<div class="cal-event" data-id="${act.id}" data-date="${date}"
-                   style="top:${top}px;height:${h}px;--ecolor:${cat.color}">
+                   style="top:${top}px;--ecolor:${cat.color}">
                 <div class="cal-event-inner">
                   <div class="cal-event-title">${escapeHtml(act.title)}</div>
                   <div class="cal-event-time">${act.time}${act.endTime ? ' – ' + act.endTime : ''}</div>

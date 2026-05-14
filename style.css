@@ -2253,8 +2253,9 @@ textarea { resize: vertical; min-height: 80px; }
   position: absolute;
   left: 4px;
   right: 4px;
+  height: 52px;   /* 모든 카드 동일 높이 */
   border-radius: 6px;
-  padding: 3px 6px 3px 8px;
+  padding: 6px 6px 6px 10px;
   cursor: pointer;
   overflow: hidden;
   user-select: none;
@@ -2263,8 +2264,10 @@ textarea { resize: vertical; min-height: 80px; }
   color: var(--ecolor, var(--accent));
   transition: filter 0.15s, box-shadow 0.15s, z-index 0s;
   z-index: 2;
-  min-height: 22px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .cal-event:hover {
@@ -2301,16 +2304,9 @@ textarea { resize: vertical; min-height: 80px; }
   color: inherit;
 }
 
-/* 리사이즈 핸들 */
+/* 리사이즈 핸들 (고정 높이 모드에서 숨김) */
 .cal-event-resize {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 7px;
-  cursor: ns-resize;
-  border-radius: 0 0 4px 4px;
-  z-index: 3;
+  display: none;
 }
 
 .cal-event-resize::after {
