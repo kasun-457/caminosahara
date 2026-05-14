@@ -343,8 +343,114 @@ function mapDirectionsUrl(from, to) {
 
 let detailContext = { activityId: null, date: null };
 
+// ── 장소 자동완성 (Nominatim) ──────────────────────────────────────────────
+const PLACE_AC_KEYS = new Set(['address', 'fromLocation', 'toLocation']);
+
+class PlaceAutocomplete {
+  constructor(inputEl, onSelect) {
+    this.input = inputEl;
+    this.onSelect = onSelect;
+    this.list = null;
+    this.timer = null;
+    this.activeIdx = -1;
+    this._onInput = this._onInput.bind(this);
+    this._onKeydown = this._onKeydown.bind(this);
+    this._onBlur = this._onBlur.bind(this);
+    inputEl.addEventListener('input', this._onInput);
+    inputEl.addEventListener('keydown', this._onKeydown);
+    inputEl.addEventListener('blur', this._onBlur);
+  }
+
+  _onInput() {
+    clearTimeout(this.timer);
+    const q = this.input.value.trim();
+    if (q.length < 2) { this._close(); return; }
+    this.timer = setTimeout(() => this._fetch(q), 350);
+  }
+
+  async _fetch(q) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=ko`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'ko' } });
+      const data = await res.json();
+      this._render(data);
+    } catch { this._close(); }
+  }
+
+  _render(results) {
+    this._close();
+    if (!results.length) return;
+    const wrap = this.input.closest('.place-ac-wrap') || this.input.parentElement;
+    const list = document.createElement('ul');
+    list.className = 'place-ac-list';
+    list.setAttribute('role', 'listbox');
+    results.forEach((r, i) => {
+      const li = document.createElement('li');
+      li.className = 'place-ac-item';
+      li.setAttribute('role', 'option');
+      li.innerHTML = `<span class="place-ac-icon">📍</span><span>${escapeHtml(r.display_name)}</span>`;
+      li.addEventListener('mousedown', e => { e.preventDefault(); this._pick(r.display_name); });
+      list.appendChild(li);
+    });
+    wrap.style.position = 'relative';
+    wrap.appendChild(list);
+    this.list = list;
+    this.activeIdx = -1;
+  }
+
+  _onKeydown(e) {
+    if (!this.list) return;
+    const items = this.list.querySelectorAll('.place-ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.activeIdx = Math.min(this.activeIdx + 1, items.length - 1);
+      this._highlight(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.activeIdx = Math.max(this.activeIdx - 1, 0);
+      this._highlight(items);
+    } else if (e.key === 'Enter' && this.activeIdx >= 0) {
+      e.preventDefault();
+      this._pick(items[this.activeIdx].textContent.replace('📍', '').trim());
+    } else if (e.key === 'Escape') {
+      this._close();
+    }
+  }
+
+  _highlight(items) {
+    items.forEach((el, i) => el.classList.toggle('ac-active', i === this.activeIdx));
+  }
+
+  _onBlur() { setTimeout(() => this._close(), 150); }
+
+  _pick(name) {
+    this.input.value = name;
+    this._close();
+    if (this.onSelect) this.onSelect(name);
+  }
+
+  _close() {
+    if (this.list) { this.list.remove(); this.list = null; }
+    this.activeIdx = -1;
+  }
+
+  destroy() {
+    this._close();
+    clearTimeout(this.timer);
+    this.input.removeEventListener('input', this._onInput);
+    this.input.removeEventListener('keydown', this._onKeydown);
+    this.input.removeEventListener('blur', this._onBlur);
+  }
+}
+
+let dpAutocompletes = [];
+
 // ── 상세 편집 패널 ─────────────────────────────────────────────────────────
 function renderDetailPanelFields(category, details = {}) {
+  // 기존 자동완성 인스턴스 정리
+  dpAutocompletes.forEach(ac => ac.destroy());
+  dpAutocompletes = [];
+
   const container = document.getElementById('dp-dynamic-fields');
   const fields = CATEGORY_FIELDS[category] || [];
   container.innerHTML = fields.map(f => `
@@ -352,9 +458,11 @@ function renderDetailPanelFields(category, details = {}) {
       <span class="dp-field-icon">${f.icon}</span>
       <div class="dp-field-content">
         <span class="dp-field-label">${f.label}</span>
-        <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
-               placeholder="${escapeHtml(f.placeholder || '')}"
-               value="${escapeHtml(details[f.key] || '')}">
+        <div class="${PLACE_AC_KEYS.has(f.key) ? 'place-ac-wrap' : ''}">
+          <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
+                 placeholder="${escapeHtml(f.placeholder || '')}"
+                 value="${escapeHtml(details[f.key] || '')}" autocomplete="off">
+        </div>
       </div>
     </div>`).join('');
 
@@ -362,6 +470,12 @@ function renderDetailPanelFields(category, details = {}) {
     inp.addEventListener('input', () => {
       updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
     });
+    if (PLACE_AC_KEYS.has(inp.dataset.key)) {
+      const ac = new PlaceAutocomplete(inp, () => {
+        updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
+      });
+      dpAutocompletes.push(ac);
+    }
   });
 }
 
@@ -418,12 +532,14 @@ function openDetailPanel(activityId, date) {
   const activeItem = document.querySelector(`.activity-item[data-id="${activityId}"]`);
   if (activeItem) activeItem.classList.add('dp-active');
 
-  document.getElementById('detail-panel').classList.add('active');
+  document.getElementById('detail-overlay').classList.add('active');
 }
 
 function closeDetailPanel() {
-  document.getElementById('detail-panel').classList.remove('active');
+  document.getElementById('detail-overlay').classList.remove('active');
   document.querySelectorAll('.activity-item.dp-active').forEach(el => el.classList.remove('dp-active'));
+  dpAutocompletes.forEach(ac => ac.destroy());
+  dpAutocompletes = [];
   detailContext = { activityId: null, date: null };
 }
 
@@ -1210,9 +1326,14 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
 });
 
+// 상세 팝업 오버레이 클릭 시 닫기
+document.getElementById('detail-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('detail-overlay')) closeDetailPanel();
+});
+
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (document.getElementById('detail-panel').classList.contains('active')) {
+  if (document.getElementById('detail-overlay').classList.contains('active')) {
     closeDetailPanel(); return;
   }
   ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account'].forEach(id => {

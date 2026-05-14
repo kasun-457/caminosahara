@@ -157,46 +157,8 @@
         <div class="day-tabs" id="day-tabs"></div>
       </div>
 
-      <div class="trip-content-row" id="trip-content-row">
+      <div id="trip-content-row">
         <div class="activities-panel" id="activities-panel"></div>
-
-        <aside class="detail-panel" id="detail-panel">
-          <div class="dp-header">
-            <div class="dp-top-row">
-              <select class="dp-cat-select" id="dp-category">
-                <option value="관광">🏛️ 관광</option>
-                <option value="식사">🍽️ 식사</option>
-                <option value="교통">🚌 교통</option>
-                <option value="숙박">🏨 숙박</option>
-                <option value="쇼핑">🛍️ 쇼핑</option>
-                <option value="기타">📌 기타</option>
-              </select>
-              <div class="dp-time-range">
-                <input type="time" class="dp-time-input" id="dp-time">
-                <span class="dp-time-sep">–</span>
-                <input type="time" class="dp-time-input" id="dp-end-time">
-              </div>
-              <button type="button" class="dp-close" id="dp-close" aria-label="닫기">✕</button>
-            </div>
-            <input type="text" class="dp-title-input" id="dp-title" placeholder="일정 제목">
-          </div>
-          <div class="dp-body">
-            <div class="dp-dynamic-fields" id="dp-dynamic-fields"></div>
-            <div class="dp-notes-section">
-              <span class="dp-section-label">💬 메모</span>
-              <textarea class="dp-notes-input" id="dp-notes" placeholder="추가 정보를 입력하세요..." rows="3"></textarea>
-            </div>
-            <div class="dp-map-wrap" id="dp-map-wrap" style="display:none">
-              <span class="dp-section-label">🗺️ 지도</span>
-              <iframe class="dp-map-frame" id="dp-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-              <a class="btn-map" id="dp-map-link" href="#" target="_blank" rel="noopener">🗺️ Google 지도에서 열기 →</a>
-            </div>
-          </div>
-          <div class="dp-footer">
-            <button type="button" class="btn-danger btn-sm" id="dp-delete">삭제</button>
-            <button type="button" class="btn-primary btn-sm" id="dp-save">저장</button>
-          </div>
-        </aside>
       </div>
 
       <!-- 캘린더 그리드 뷰 -->
@@ -315,6 +277,47 @@
         <button class="btn-danger" id="btn-confirm-ok">삭제</button>
       </div>
     </div>
+  </div>
+
+  <!-- 일정 상세 편집 팝업 -->
+  <div class="detail-overlay" id="detail-overlay">
+    <aside class="detail-panel" id="detail-panel">
+      <div class="dp-header">
+        <div class="dp-top-row">
+          <select class="dp-cat-select" id="dp-category">
+            <option value="관광">🏛️ 관광</option>
+            <option value="식사">🍽️ 식사</option>
+            <option value="교통">🚌 교통</option>
+            <option value="숙박">🏨 숙박</option>
+            <option value="쇼핑">🛍️ 쇼핑</option>
+            <option value="기타">📌 기타</option>
+          </select>
+          <div class="dp-time-range">
+            <input type="time" class="dp-time-input" id="dp-time">
+            <span class="dp-time-sep">–</span>
+            <input type="time" class="dp-time-input" id="dp-end-time">
+          </div>
+          <button type="button" class="dp-close" id="dp-close" aria-label="닫기">✕</button>
+        </div>
+        <input type="text" class="dp-title-input" id="dp-title" placeholder="일정 제목">
+      </div>
+      <div class="dp-body">
+        <div class="dp-dynamic-fields" id="dp-dynamic-fields"></div>
+        <div class="dp-notes-section">
+          <span class="dp-section-label">💬 메모</span>
+          <textarea class="dp-notes-input" id="dp-notes" placeholder="추가 정보를 입력하세요..." rows="3"></textarea>
+        </div>
+        <div class="dp-map-wrap" id="dp-map-wrap" style="display:none">
+          <span class="dp-section-label">🗺️ 지도</span>
+          <iframe class="dp-map-frame" id="dp-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <a class="btn-map" id="dp-map-link" href="#" target="_blank" rel="noopener">🗺️ Google 지도에서 열기 →</a>
+        </div>
+      </div>
+      <div class="dp-footer">
+        <button type="button" class="btn-danger btn-sm" id="dp-delete">삭제</button>
+        <button type="button" class="btn-primary btn-sm" id="dp-save">저장</button>
+      </div>
+    </aside>
   </div>
 
   <script src="script.js"></script>
