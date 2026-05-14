@@ -11,6 +11,7 @@ export const state = {
   unsubscribeTrips: null,
   startPicker: null,
   endPicker: null,
+  tripSort: 'recent',   // 'recent' | 'name' | 'manual'
   calView: 'list',
   calDateOffset: 0,
   gridScrollController: null,

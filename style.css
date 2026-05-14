@@ -140,12 +140,82 @@ h1 {
   letter-spacing: -0.01em;
 }
 
+/* ── 정렬 탭 ───────────────────────────────────────────────────────────── */
+.trip-sort-bar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+.trip-sort-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.trip-sort-btn:hover { color: var(--text); border-color: var(--muted); }
+.trip-sort-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b0b0d;
+  font-weight: 600;
+}
+
 /* ── 여행 카드 그리드 ──────────────────────────────────────────────────── */
 .trip-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
+
+/* ── 우클릭 컨텍스트 메뉴 ─────────────────────────────────────────────── */
+.trip-ctx-menu {
+  position: fixed;
+  z-index: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.4rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  display: none;
+  flex-direction: column;
+  min-width: 140px;
+}
+.trip-ctx-menu.active { display: flex; }
+.trip-ctx-item {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.trip-ctx-item:hover { background: var(--surface2); }
+.trip-ctx-item.ctx-danger { color: #f87171; }
+.trip-ctx-item.ctx-danger:hover { background: rgba(248,113,113,0.1); }
+
+/* ── 직접정렬 드래그 ──────────────────────────────────────────────────── */
+.trip-drag-handle {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  font-size: 1.1rem;
+  color: var(--muted);
+  cursor: grab;
+  opacity: 0.5;
+  line-height: 1;
+}
+.trip-card.draggable { position: relative; cursor: default; }
+.trip-card.dragging  { opacity: 0.4; }
+.trip-card.drag-over { outline: 2px dashed var(--accent); outline-offset: 2px; }
 
 .trip-card {
   background: linear-gradient(165deg, var(--surface) 0%, var(--bg-elev) 100%);

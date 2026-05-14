@@ -8,6 +8,14 @@
       </div>
       <button class="btn-primary" id="btn-new-trip">+ 새 여행 추가</button>
     </div>
+
+    <!-- 정렬 탭 -->
+    <div class="trip-sort-bar">
+      <button class="trip-sort-btn active" data-sort="recent">최신순</button>
+      <button class="trip-sort-btn" data-sort="name">이름순</button>
+      <button class="trip-sort-btn" data-sort="manual">직접정렬</button>
+    </div>
+
     <div class="trip-grid" id="trip-grid"></div>
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">✈️</div>
@@ -16,3 +24,10 @@
       <button class="btn-primary" id="btn-new-trip-empty">+ 첫 여행 추가하기</button>
     </div>
   </section>
+
+  <!-- 우클릭 컨텍스트 메뉴 -->
+  <div class="trip-ctx-menu" id="trip-ctx-menu">
+    <button class="trip-ctx-item" id="ctx-edit">✎ 수정</button>
+    <button class="trip-ctx-item ctx-danger" id="ctx-delete">✕ 삭제</button>
+  </div>
+</main>

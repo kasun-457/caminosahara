@@ -9,6 +9,7 @@ import {
 } from './auth.js';
 import {
   openTripModal, saveTripForm, copyShareLink,
+  renderTripList, initContextMenu,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -81,6 +82,17 @@ async function init() {
   document.getElementById('btn-delete-account').addEventListener('click', openDeleteAccountModal);
   document.getElementById('form-delete-account').addEventListener('submit', submitDeleteAccount);
   document.getElementById('btn-logout').addEventListener('click', signOutUser);
+
+  // 정렬 탭
+  document.querySelectorAll('.trip-sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.tripSort = btn.dataset.sort;
+      renderTripList();
+    });
+  });
+
+  // 우클릭 컨텍스트 메뉴
+  initContextMenu();
 
   // 여행
   document.getElementById('btn-new-trip').addEventListener('click', () => openTripModal());

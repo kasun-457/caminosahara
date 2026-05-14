@@ -3,7 +3,35 @@ import { db } from './firebase.js';
 import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal } from './utils.js';
 import { renderDayTabs } from './day-list.js';
 import { renderGridView } from './calendar.js';
-import { goBack } from './activities.js';
+import { goBack, confirmAction, deleteTrip } from './activities.js';
+
+// ── 수동 정렬 순서 (localStorage) ─────────────────────────────────────────────
+function getManualOrder() {
+  try { return JSON.parse(localStorage.getItem(`tripOrder_${state.currentUser?.uid}`) || '[]'); }
+  catch { return []; }
+}
+function saveManualOrder(ids) {
+  localStorage.setItem(`tripOrder_${state.currentUser?.uid}`, JSON.stringify(ids));
+}
+function sortedTrips() {
+  const trips = [...state.trips];
+  if (state.tripSort === 'name') {
+    return trips.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+  }
+  if (state.tripSort === 'manual') {
+    const order = getManualOrder();
+    return trips.sort((a, b) => {
+      const ia = order.indexOf(a.id);
+      const ib = order.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
+  // 'recent': createdAt 내림차순 (기본)
+  return trips.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+}
 
 export function subscribeToTrips() {
   if (state.unsubscribeTrips) state.unsubscribeTrips();
@@ -27,17 +55,26 @@ export function subscribeToTrips() {
 }
 
 export function renderTripList() {
-  const grid = document.getElementById('trip-grid');
+  const grid  = document.getElementById('trip-grid');
   const empty = document.getElementById('empty-state');
 
-  if (state.trips.length === 0) {
+  // 정렬 탭 active 표시
+  document.querySelectorAll('.trip-sort-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sort === state.tripSort);
+  });
+
+  const trips = sortedTrips();
+
+  if (trips.length === 0) {
     grid.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
 
   empty.classList.add('hidden');
-  grid.innerHTML = state.trips.map(trip => {
+  const isManual = state.tripSort === 'manual';
+
+  grid.innerHTML = trips.map(trip => {
     const days = getDays(trip.startDate, trip.endDate);
     const totalActs = days.reduce((n, date) => {
       const day = trip.days.find(d => d.date === date);
@@ -45,7 +82,9 @@ export function renderTripList() {
     }, 0);
     const members = trip.memberIds?.length ?? 1;
     return `
-      <div class="trip-card" data-id="${trip.id}" style="--trip-color:${trip.color}">
+      <div class="trip-card${isManual ? ' draggable' : ''}" data-id="${trip.id}"
+           style="--trip-color:${trip.color}" ${isManual ? 'draggable="true"' : ''}>
+        ${isManual ? '<div class="trip-drag-handle">⠿</div>' : ''}
         <div class="trip-card-top">
           <div class="trip-card-deco"></div>
           <p class="trip-card-dest">${trip.destination}</p>
@@ -58,8 +97,102 @@ export function renderTripList() {
       </div>`;
   }).join('');
 
+  // 클릭 → 여행 열기
   grid.querySelectorAll('.trip-card').forEach(card => {
-    card.addEventListener('click', () => openTrip(card.dataset.id));
+    card.addEventListener('click', e => {
+      if (e.target.closest('.trip-drag-handle')) return;
+      openTrip(card.dataset.id);
+    });
+  });
+
+  // 우클릭 → 컨텍스트 메뉴
+  grid.querySelectorAll('.trip-card').forEach(card => {
+    card.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showContextMenu(e.clientX, e.clientY, card.dataset.id);
+    });
+  });
+
+  // 직접정렬 드래그
+  if (isManual) setupDragSort(grid);
+}
+
+// ── 컨텍스트 메뉴 ─────────────────────────────────────────────────────────────
+let _ctxTripId = null;
+
+function showContextMenu(x, y, tripId) {
+  _ctxTripId = tripId;
+  const menu = document.getElementById('trip-ctx-menu');
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  menu.classList.add('active');
+
+  // 뷰포트 밖으로 나가면 위로 펼침
+  requestAnimationFrame(() => {
+    const r = menu.getBoundingClientRect();
+    if (r.bottom > window.innerHeight) menu.style.top = (y - r.height) + 'px';
+    if (r.right  > window.innerWidth)  menu.style.left = (x - r.width)  + 'px';
+  });
+}
+
+export function hideContextMenu() {
+  document.getElementById('trip-ctx-menu')?.classList.remove('active');
+  _ctxTripId = null;
+}
+
+export function initContextMenu() {
+  document.getElementById('ctx-edit')?.addEventListener('click', () => {
+    if (_ctxTripId) { openTripModal(_ctxTripId); hideContextMenu(); }
+  });
+  document.getElementById('ctx-delete')?.addEventListener('click', () => {
+    if (_ctxTripId) {
+      const id = _ctxTripId;
+      hideContextMenu();
+      confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(id));
+    }
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#trip-ctx-menu')) hideContextMenu();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideContextMenu();
+  });
+}
+
+// ── 직접정렬 드래그 ───────────────────────────────────────────────────────────
+function setupDragSort(grid) {
+  let dragSrc = null;
+
+  grid.querySelectorAll('.trip-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => card.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      grid.querySelectorAll('.trip-card').forEach(c => c.classList.remove('drag-over'));
+      // 현재 순서 저장
+      const ids = [...grid.querySelectorAll('.trip-card')].map(c => c.dataset.id);
+      saveManualOrder(ids);
+      dragSrc = null;
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (card === dragSrc) return;
+      grid.querySelectorAll('.trip-card').forEach(c => c.classList.remove('drag-over'));
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc || dragSrc === card) return;
+      const cards = [...grid.querySelectorAll('.trip-card')];
+      const srcIdx = cards.indexOf(dragSrc);
+      const tgtIdx = cards.indexOf(card);
+      if (srcIdx < tgtIdx) card.after(dragSrc);
+      else card.before(dragSrc);
+    });
   });
 }
 
