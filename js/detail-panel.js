@@ -90,11 +90,24 @@ export function setDetailMode(mode) {
   document.getElementById('dp-end-time').readOnly = ro;
   document.getElementById('dp-category').disabled = ro;
 
-  document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
-    el.readOnly = ro;
-  });
-  // 첨부 섹션도 모드에 맞춰 다시 렌더
-  if (state.detailContext?.activityId) renderAndBindAttachments();
+  // 동적 필드는 모드에 따라 input ↔ 하이퍼링크 형태가 달라지므로 재렌더
+  if (state.detailContext?.activityId) {
+    const category = document.getElementById('dp-category').value;
+    // 현재 화면(또는 원본)에서 details 수집
+    const inMemoryDetails = gatherDetailPanelFields();
+    const trip = state.trips.find(t => t.id === state.currentTripId);
+    const dayData = trip?.days.find(d => d.date === state.detailContext.date);
+    const act = dayData?.activities.find(a => a.id === state.detailContext.activityId);
+    const sourceDetails = act?.details || {};
+    // 입력이 없던 필드(URL 등)는 원본 details로 보완
+    const merged = { ...sourceDetails, ...inMemoryDetails };
+    renderDetailPanelFields(category, merged);
+    renderAndBindAttachments();
+  } else {
+    document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
+      el.readOnly = ro;
+    });
+  }
 }
 
 export function getDetailMode() {
