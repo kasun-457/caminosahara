@@ -208,6 +208,7 @@ let startPicker = null;
 let endPicker = null;
 let calView = 'list';
 let calDateOffset = 0;
+let gridScrollController = null;
 
 const HOUR_PX = 64;
 
@@ -217,7 +218,9 @@ function uid() {
 }
 
 function generateShareCode() {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  const arr = new Uint8Array(6);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(36)).join('').slice(0, 8).toUpperCase();
 }
 
 function getDays(start, end) {
@@ -560,7 +563,7 @@ async function saveDetailPanel() {
   const details = gatherDetailPanelFields();
 
   const trip = trips.find(t => t.id === currentTripId);
-  const updatedDays = JSON.parse(JSON.stringify(trip.days));
+  const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
   if (!dayData) return;
   const act = dayData.activities.find(a => a.id === activityId);
@@ -1193,7 +1196,7 @@ async function saveActivityForm(e) {
   const date = editingActivityDate;
 
   const trip = trips.find(t => t.id === currentTripId);
-  const updatedDays = JSON.parse(JSON.stringify(trip.days));
+  const updatedDays = structuredClone(trip.days);
   let dayData = updatedDays.find(d => d.date === date);
   if (!dayData) { dayData = { date, activities: [] }; updatedDays.push(dayData); }
 
@@ -1216,7 +1219,7 @@ async function saveActivityForm(e) {
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 async function deleteActivity(tripId, date, actId) {
   const trip = trips.find(t => t.id === tripId);
-  const updatedDays = JSON.parse(JSON.stringify(trip.days));
+  const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
   if (dayData) dayData.activities = dayData.activities.filter(a => a.id !== actId);
   try {
@@ -1372,7 +1375,7 @@ function minutesToTimeStr(min) {
 async function updateActivityFields(actId, date, updates) {
   const trip = trips.find(t => t.id === currentTripId);
   if (!trip) return;
-  const updatedDays = JSON.parse(JSON.stringify(trip.days));
+  const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
   if (!dayData) return;
   const act = dayData.activities.find(a => a.id === actId);
@@ -1468,10 +1471,12 @@ function renderGridView(trip) {
   const colsWrap = calEl.querySelector('#cal-cols-wrap');
   calEl.querySelector('#cal-hcols').style.overflow = 'hidden';
   calEl.querySelector('#cal-adcols').style.overflow = 'hidden';
+  if (gridScrollController) gridScrollController.abort();
+  gridScrollController = new AbortController();
   colsWrap.addEventListener('scroll', () => {
     calEl.querySelector('#cal-hcols').scrollLeft = colsWrap.scrollLeft;
     calEl.querySelector('#cal-adcols').scrollLeft = colsWrap.scrollLeft;
-  });
+  }, { signal: gridScrollController.signal });
 
   // 현재 시간 선
   const todayStr = (() => {
