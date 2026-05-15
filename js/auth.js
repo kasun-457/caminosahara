@@ -174,7 +174,7 @@ export async function submitDeleteAccount(e) {
 
   try {
     if (state.unsubscribeTrips) { state.unsubscribeTrips(); state.unsubscribeTrips = null; }
-    await deleteOwnedTripsAndLeaveShared();
+    await deleteOwnedTripsAndLeaveShared().catch(() => {});
     await state.currentUser.delete();
     document.getElementById('modal-delete-account').classList.remove('active');
     showToast('회원탈퇴가 완료되었습니다.');
