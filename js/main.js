@@ -3,7 +3,7 @@ import { closeModal } from './utils.js';
 import { DatePicker } from './date-picker.js';
 import { attachTimePickers } from './time-picker.js';
 import {
-  setAuthMode, signInWithGoogle, submitAuthForm, signOutUser,
+  setAuthMode, signInWithGoogle, signInWithApple, submitAuthForm, signOutUser,
   openDeleteAccountModal, submitDeleteAccount,
   toggleUserMenu, closeUserMenu, initAuthStateListener,
 } from './auth.js';
@@ -65,6 +65,7 @@ async function init() {
 
   // Auth
   document.getElementById('btn-google-login').addEventListener('click', signInWithGoogle);
+  document.getElementById('btn-apple-login').addEventListener('click', signInWithApple);
   document.getElementById('form-auth').addEventListener('submit', submitAuthForm);
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => setAuthMode(tab.dataset.tab));
