@@ -9,7 +9,7 @@ import {
 } from './auth.js';
 import {
   openTripModal, saveTripForm, copyShareLink,
-  renderTripList, initContextMenu, initSortDropdown,
+  renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -86,6 +86,7 @@ async function init() {
 
   // 정렬 드롭다운
   initSortDropdown();
+  initTripModalTabs();
 
   // 우클릭 컨텍스트 메뉴
   initContextMenu();

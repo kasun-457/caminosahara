@@ -5,6 +5,14 @@
       <h2 id="modal-trip-heading">새 여행 추가</h2>
       <button class="modal-close" data-close="modal-trip">✕</button>
     </div>
+
+    <!-- 새 여행 / 초대 링크 탭 (수정 모드에선 숨김) -->
+    <div class="trip-modal-tabs" id="trip-modal-tabs">
+      <button type="button" class="trip-modal-tab active" data-trip-tab="new">새 여행</button>
+      <button type="button" class="trip-modal-tab" data-trip-tab="join">초대 링크로 참여</button>
+    </div>
+
+    <!-- 새 여행 폼 -->
     <form id="form-trip" novalidate>
       <div class="form-group">
         <label for="trip-name">여행 이름</label>
@@ -54,6 +62,19 @@
         <button type="submit" class="btn-primary">저장</button>
       </div>
     </form>
+
+    <!-- 초대 링크 참여 패널 -->
+    <div id="trip-join-panel" class="trip-join-panel hidden">
+      <div class="form-group">
+        <label for="join-link-input">초대 링크</label>
+        <input type="text" id="join-link-input" placeholder="초대 링크를 붙여넣으세요" autocomplete="off">
+        <span class="field-error" id="err-join-link"></span>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" data-close="modal-trip">취소</button>
+        <button type="button" class="btn-primary" id="btn-join-trip">참여하기</button>
+      </div>
+    </div>
   </div>
 </div>
 

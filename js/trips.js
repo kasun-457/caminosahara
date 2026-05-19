@@ -282,6 +282,10 @@ export function openTripModal(tripId = null) {
   state.editingTripId = tripId;
   clearTripErrors();
 
+  const tabs    = document.getElementById('trip-modal-tabs');
+  const form    = document.getElementById('form-trip');
+  const panel   = document.getElementById('trip-join-panel');
+
   if (tripId) {
     const trip = state.trips.find(t => t.id === tripId);
     document.getElementById('modal-trip-heading').textContent = '여행 수정';
@@ -290,10 +294,17 @@ export function openTripModal(tripId = null) {
     document.getElementById('trip-start').value = trip.startDate;
     document.getElementById('trip-end').value = trip.endDate;
     state.selectedColor = trip.color;
+    // 수정 모드: 탭 숨기고 새 여행 폼만 표시
+    tabs.style.display = 'none';
+    form.style.display = '';
+    panel.classList.add('hidden');
   } else {
     document.getElementById('modal-trip-heading').textContent = '새 여행 추가';
     document.getElementById('form-trip').reset();
     state.selectedColor = '#c8f060';
+    // 추가 모드: 탭 표시, 새 여행 탭으로 초기화
+    tabs.style.display = '';
+    setTripModalTab('new');
   }
 
   document.querySelectorAll('.color-btn').forEach(btn => {
@@ -301,7 +312,97 @@ export function openTripModal(tripId = null) {
   });
 
   openModal('modal-trip');
-  document.getElementById('trip-name').focus();
+  if (!tripId) document.getElementById('trip-name').focus();
+}
+
+function setTripModalTab(tab) {
+  const form  = document.getElementById('form-trip');
+  const panel = document.getElementById('trip-join-panel');
+  document.querySelectorAll('.trip-modal-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tripTab === tab)
+  );
+  if (tab === 'new') {
+    form.style.display = '';
+    panel.classList.add('hidden');
+    document.getElementById('trip-name').focus();
+  } else {
+    form.style.display = 'none';
+    panel.classList.remove('hidden');
+    document.getElementById('join-link-input').value = '';
+    document.getElementById('err-join-link').textContent = '';
+    document.getElementById('join-link-input').focus();
+  }
+}
+
+export function initTripModalTabs() {
+  document.querySelectorAll('.trip-modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => setTripModalTab(tab.dataset.tripTab));
+  });
+
+  document.getElementById('btn-join-trip').addEventListener('click', submitJoinTrip);
+}
+
+async function submitJoinTrip() {
+  const input   = document.getElementById('join-link-input');
+  const errEl   = document.getElementById('err-join-link');
+  const raw     = input.value.trim();
+  errEl.textContent = '';
+
+  if (!raw) {
+    errEl.textContent = '초대 링크를 붙여넣어 주세요';
+    input.focus();
+    return;
+  }
+
+  let tripId, joinCode;
+  try {
+    const url    = new URL(raw);
+    tripId   = url.searchParams.get('tripId');
+    joinCode = url.searchParams.get('join');
+  } catch {
+    // URL 파싱 실패
+  }
+
+  if (!tripId || !joinCode) {
+    errEl.textContent = '올바른 초대 링크가 아닙니다';
+    input.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btn-join-trip');
+  btn.disabled = true;
+  btn.textContent = '처리 중…';
+
+  try {
+    const docRef  = db.collection('trips').doc(tripId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      errEl.textContent = '유효하지 않은 여행입니다';
+      return;
+    }
+
+    const trip = docSnap.data();
+    if (trip.shareCode !== joinCode) {
+      errEl.textContent = '초대 코드가 올바르지 않습니다';
+      return;
+    }
+    if (trip.memberIds.includes(state.currentUser.uid)) {
+      closeModal('modal-trip');
+      showToast('이미 참여 중인 여행입니다');
+      return;
+    }
+
+    await docRef.update({ memberIds: firebase.firestore.FieldValue.arrayUnion(state.currentUser.uid) });
+    closeModal('modal-trip');
+    showToast(`"${trip.title}" 여행에 참여했습니다!`);
+  } catch (err) {
+    console.error(err);
+    errEl.textContent = '참여 처리 중 오류가 발생했습니다';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '참여하기';
+  }
 }
 
 export function clearTripErrors() {
