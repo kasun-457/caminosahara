@@ -18,4 +18,6 @@ export const state = {
   authMode: 'login',
   dpAutocompletes: [],
   detailContext: { activityId: null, date: null },
+  pendingJoin: null, // { tripId, joinCode, source: 'url'|'paste' }
+  inviteTripId: null,
 };

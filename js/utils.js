@@ -10,6 +10,12 @@ export function generateShareCode() {
   return Array.from(arr, b => b.toString(36)).join('').slice(0, 8).toUpperCase();
 }
 
+export async function sha256Hex(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function getDays(start, end) {
   const days = [];
   const s = new Date(start + 'T00:00:00');

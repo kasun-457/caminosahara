@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { db } from './firebase.js';
-import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal } from './utils.js';
+import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal, sha256Hex, escapeHtml } from './utils.js';
 import { renderDayTabs } from './day-list.js';
 import { renderGridView } from './calendar.js';
 import { goBack, confirmAction, deleteTrip } from './activities.js';
@@ -269,6 +269,25 @@ export function isOwner(trip) {
   return trip?.ownerId === state.currentUser?.uid;
 }
 
+// 편집 권한: 관리자(owner) 또는 memberRoles[uid] === 'editor'
+export function canEdit(trip) {
+  if (!trip) return false;
+  if (isOwner(trip)) return true;
+  const role = trip.memberRoles?.[state.currentUser?.uid];
+  return role === 'editor';
+}
+
+export function getRole(trip, uid) {
+  if (!trip || !uid) return 'viewer';
+  if (trip.ownerId === uid) return 'owner';
+  return trip.memberRoles?.[uid] || 'viewer';
+}
+
+export function memberDisplayName(trip, uid) {
+  const p = trip?.memberProfiles?.[uid] || {};
+  return p.nickname || p.name || p.email || (uid ? uid.slice(0, 8) + '…' : '');
+}
+
 export function openTrip(tripId) {
   state.currentTripId = tripId;
   window.history.replaceState(null, '', '#' + tripId);
@@ -288,9 +307,10 @@ export function openTrip(tripId) {
 
   // 관리자 전용 버튼 / 멤버 전용 버튼 표시 제어
   const owner = isOwner(trip);
+  document.getElementById('btn-share-trip').style.display       = owner ? '' : 'none';
+  document.getElementById('btn-members').style.display          = owner ? '' : 'none';
   document.getElementById('btn-edit-trip').style.display        = owner ? '' : 'none';
   document.getElementById('btn-delete-trip').style.display      = owner ? '' : 'none';
-  document.getElementById('btn-transfer-owner').style.display   = owner && trip.memberIds.length > 1 ? '' : 'none';
   document.getElementById('btn-leave-trip').style.display       = owner ? 'none' : '';
 
   state.calView = 'list';
@@ -321,41 +341,340 @@ export function leaveTrip(tripId) {
   });
 }
 
-export async function openTransferOwnerModal(tripId) {
+// ── 초대 설정 모달 (관리자) ───────────────────────────────────────────────────
+export function openInviteModal(tripId) {
   const trip = state.trips.find(t => t.id === tripId);
-  if (!trip) return;
+  if (!trip || !isOwner(trip)) return;
 
-  const profiles = trip.memberProfiles || {};
-  const others   = trip.memberIds.filter(uid => uid !== state.currentUser.uid);
+  state.inviteTripId = tripId;
+  const isPrivate = trip.roomType === 'private';
 
-  const list = document.getElementById('transfer-member-list');
-  list.innerHTML = others.map(uid => {
-    const p    = profiles[uid] || {};
-    const name = p.name || p.email || uid.slice(0, 8) + '…';
-    const sub  = p.email && p.name ? `<span class="transfer-member-email">${p.email}</span>` : '';
-    return `<button class="transfer-member-btn" data-uid="${uid}">
-      <span class="transfer-member-name">${name}</span>${sub}
-    </button>`;
-  }).join('');
-
-  list.querySelectorAll('.transfer-member-btn').forEach(btn => {
-    btn.addEventListener('click', () => transferOwner(tripId, btn.dataset.uid));
+  document.querySelectorAll('input[name="room-type"]').forEach(r => {
+    r.checked = r.value === (isPrivate ? 'private' : 'public');
   });
+  document.getElementById('invite-password').value = '';
+  document.getElementById('err-invite-password').textContent = '';
+  updateInviteTypeUI(isPrivate ? 'private' : 'public', isPrivate);
 
-  openModal('modal-transfer-owner');
+  document.getElementById('invite-link-output').value =
+    `${location.origin}${location.pathname}?tripId=${trip.id}&join=${trip.shareCode}`;
+
+  openModal('modal-invite');
 }
 
-async function transferOwner(tripId, newOwnerUid) {
-  confirmAction('정말 관리자 권한을 넘기시겠어요? 본인은 일반 멤버가 됩니다.', async () => {
+function updateInviteTypeUI(type, alreadyHasPassword) {
+  const hint   = document.getElementById('invite-type-hint');
+  const pwGrp  = document.getElementById('invite-password-group');
+  const pwIn   = document.getElementById('invite-password');
+  if (type === 'private') {
+    hint.textContent = '초대 링크와 암호를 모두 알아야 참여할 수 있어요.';
+    pwGrp.classList.remove('hidden');
+    pwIn.placeholder = alreadyHasPassword ? '비워두면 기존 암호 유지' : '참여자가 입력할 암호 (4자 이상)';
+  } else {
+    hint.textContent = '초대 링크만 있으면 누구나 참여할 수 있어요.';
+    pwGrp.classList.add('hidden');
+  }
+}
+
+export function initInviteModal() {
+  document.querySelectorAll('input[name="room-type"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const trip = state.trips.find(t => t.id === state.inviteTripId);
+      const has  = !!trip?.roomPassword;
+      updateInviteTypeUI(r.value, has);
+    });
+  });
+
+  document.getElementById('btn-copy-invite-link').addEventListener('click', async () => {
+    const url = document.getElementById('invite-link-output').value;
     try {
-      await db.collection('trips').doc(tripId).update({ ownerId: newOwnerUid });
-      closeModal('modal-transfer-owner');
+      await navigator.clipboard.writeText(url);
+      showToast('초대 링크가 복사되었습니다!');
+    } catch {
+      prompt('아래 링크를 복사하세요:', url);
+    }
+  });
+
+  document.getElementById('btn-save-invite').addEventListener('click', saveInviteSettings);
+}
+
+async function saveInviteSettings() {
+  const tripId = state.inviteTripId;
+  if (!tripId) return;
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip || !isOwner(trip)) return;
+
+  const type   = document.querySelector('input[name="room-type"]:checked')?.value || 'public';
+  const pwIn   = document.getElementById('invite-password');
+  const errEl  = document.getElementById('err-invite-password');
+  errEl.textContent = '';
+
+  const update = { roomType: type };
+  if (type === 'public') {
+    update.roomPassword = '';
+  } else {
+    const raw = pwIn.value;
+    const hasExisting = !!trip.roomPassword;
+    if (!raw && !hasExisting) {
+      errEl.textContent = '암호를 입력해주세요.';
+      pwIn.focus();
+      return;
+    }
+    if (raw) {
+      if (raw.length < 4) {
+        errEl.textContent = '암호는 4자 이상이어야 해요.';
+        pwIn.focus();
+        return;
+      }
+      update.roomPassword = await sha256Hex(raw);
+    }
+  }
+
+  const btn = document.getElementById('btn-save-invite');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '저장 중…';
+  try {
+    await db.collection('trips').doc(tripId).update(update);
+    showToast(type === 'private' ? '사설 방으로 설정됐습니다.' : '공개 방으로 설정됐습니다.');
+    closeModal('modal-invite');
+  } catch (err) {
+    console.error(err);
+    showToast('저장에 실패했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+// ── 방 입장 플로우 (암호 + 닉네임) ────────────────────────────────────────────
+export async function beginJoinFlow(tripId, joinCode) {
+  try {
+    const docSnap = await db.collection('trips').doc(tripId).get();
+    if (!docSnap.exists) { showToast('유효하지 않은 여행입니다.'); return; }
+    const trip = docSnap.data();
+    if (trip.shareCode !== joinCode) { showToast('초대 코드가 올바르지 않습니다.'); return; }
+    if (trip.memberIds.includes(state.currentUser.uid)) {
+      showToast('이미 참여 중인 여행입니다.');
+      closeModal('modal-trip');
+      return;
+    }
+
+    state.pendingJoin = { tripId, joinCode, trip };
+    const isPrivate = trip.roomType === 'private' && !!trip.roomPassword;
+
+    document.getElementById('join-room-title-line').textContent = `"${trip.title}" 여행에 참여합니다.`;
+    document.getElementById('join-password-input').value = '';
+    document.getElementById('join-nickname-input').value =
+      state.currentUser.displayName || (state.currentUser.email ? state.currentUser.email.split('@')[0] : '');
+    document.getElementById('err-join-password').textContent = '';
+    document.getElementById('err-join-nickname').textContent = '';
+    document.getElementById('join-password-group').classList.toggle('hidden', !isPrivate);
+
+    closeModal('modal-trip');
+    openModal('modal-join-room');
+    setTimeout(() => {
+      (isPrivate
+        ? document.getElementById('join-password-input')
+        : document.getElementById('join-nickname-input')).focus();
+    }, 50);
+  } catch (err) {
+    console.error(err);
+    showToast('초대 처리 중 오류가 발생했습니다.');
+  }
+}
+
+async function confirmJoinTrip() {
+  const pj = state.pendingJoin;
+  if (!pj) return;
+  const errPw = document.getElementById('err-join-password');
+  const errNk = document.getElementById('err-join-nickname');
+  errPw.textContent = '';
+  errNk.textContent = '';
+
+  const nickname = document.getElementById('join-nickname-input').value.trim();
+  if (!nickname) {
+    errNk.textContent = '닉네임을 입력해주세요.';
+    document.getElementById('join-nickname-input').focus();
+    return;
+  }
+
+  const isPrivate = pj.trip.roomType === 'private' && !!pj.trip.roomPassword;
+  if (isPrivate) {
+    const raw = document.getElementById('join-password-input').value;
+    if (!raw) {
+      errPw.textContent = '암호를 입력해주세요.';
+      document.getElementById('join-password-input').focus();
+      return;
+    }
+    const hash = await sha256Hex(raw);
+    if (hash !== pj.trip.roomPassword) {
+      errPw.textContent = '암호가 올바르지 않아요.';
+      document.getElementById('join-password-input').focus();
+      return;
+    }
+  }
+
+  const btn = document.getElementById('btn-confirm-join');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '처리 중…';
+
+  try {
+    const u = state.currentUser;
+    await db.collection('trips').doc(pj.tripId).update({
+      memberIds: firebase.firestore.FieldValue.arrayUnion(u.uid),
+      [`memberProfiles.${u.uid}`]: {
+        name: u.displayName || '',
+        email: u.email || '',
+        nickname,
+      },
+      [`memberRoles.${u.uid}`]: 'viewer',
+    });
+    closeModal('modal-join-room');
+    state.pendingJoin = null;
+    showToast(`"${pj.trip.title}" 여행에 참여했습니다!`);
+  } catch (err) {
+    console.error(err);
+    errPw.textContent = '참여 처리 중 오류가 발생했습니다.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+export function initJoinRoomModal() {
+  document.getElementById('btn-confirm-join').addEventListener('click', confirmJoinTrip);
+  document.getElementById('join-password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmJoinTrip();
+  });
+  document.getElementById('join-nickname-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmJoinTrip();
+  });
+}
+
+// ── 참여자 관리 모달 (관리자) ─────────────────────────────────────────────────
+export function openMembersModal(tripId) {
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip || !isOwner(trip)) return;
+  renderMembersModal(trip);
+  openModal('modal-members');
+}
+
+function renderMembersModal(trip) {
+  const list = document.getElementById('member-list');
+  const me   = state.currentUser?.uid;
+  const ownerId = trip.ownerId;
+
+  // 소유자 먼저, 그 다음 나머지
+  const ordered = [ownerId, ...trip.memberIds.filter(uid => uid !== ownerId)];
+
+  list.innerHTML = ordered.map(uid => {
+    const p        = trip.memberProfiles?.[uid] || {};
+    const nickname = p.nickname || '';
+    const name     = p.name || '';
+    const email    = p.email || '';
+    const display  = escapeHtml(nickname || name || email || uid.slice(0, 8) + '…');
+    const sub      = nickname && (name || email)
+      ? `<span class="member-sub">${escapeHtml(name || email)}</span>`
+      : (email && !nickname ? `<span class="member-sub">${escapeHtml(email)}</span>` : '');
+
+    if (uid === ownerId) {
+      return `
+      <div class="member-row member-row-owner">
+        <div class="member-info">
+          <span class="member-name">👑 ${display}${uid === me ? ' (나)' : ''}</span>
+          ${sub}
+        </div>
+        <span class="member-badge member-badge-owner">관리자</span>
+      </div>`;
+    }
+
+    const role = trip.memberRoles?.[uid] || 'viewer';
+    return `
+      <div class="member-row" data-uid="${uid}">
+        <div class="member-info">
+          <span class="member-name">${display}</span>
+          ${sub}
+        </div>
+        <div class="member-controls">
+          <select class="member-role-select" data-uid="${uid}">
+            <option value="viewer"  ${role === 'viewer'  ? 'selected' : ''}>뷰어</option>
+            <option value="editor"  ${role === 'editor'  ? 'selected' : ''}>편집자</option>
+          </select>
+          <button class="btn-outline btn-sm member-promote" data-uid="${uid}" title="관리자로 위임">👑 위임</button>
+          <button class="btn-danger btn-sm member-kick" data-uid="${uid}" title="추방">추방</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.member-role-select').forEach(sel => {
+    sel.addEventListener('change', () => setMemberRole(trip.id, sel.dataset.uid, sel.value));
+  });
+  list.querySelectorAll('.member-promote').forEach(btn => {
+    btn.addEventListener('click', () => promptTransferOwner(trip.id, btn.dataset.uid));
+  });
+  list.querySelectorAll('.member-kick').forEach(btn => {
+    btn.addEventListener('click', () => promptKickMember(trip.id, btn.dataset.uid));
+  });
+}
+
+async function setMemberRole(tripId, uid, role) {
+  try {
+    await db.collection('trips').doc(tripId).update({
+      [`memberRoles.${uid}`]: role,
+    });
+    showToast(`권한이 ${role === 'editor' ? '편집자' : '뷰어'}(으)로 변경됐습니다.`);
+  } catch (err) {
+    console.error(err);
+    showToast('권한 변경에 실패했습니다.');
+  }
+}
+
+function promptTransferOwner(tripId, newOwnerUid) {
+  const trip = state.trips.find(t => t.id === tripId);
+  const name = memberDisplayName(trip, newOwnerUid);
+  confirmAction(`"${name}" 님에게 관리자 권한을 위임할까요? 본인은 편집자가 됩니다.`, async () => {
+    try {
+      const oldOwner = state.currentUser.uid;
+      await db.collection('trips').doc(tripId).update({
+        ownerId: newOwnerUid,
+        [`memberRoles.${oldOwner}`]: 'editor',
+        [`memberRoles.${newOwnerUid}`]: firebase.firestore.FieldValue.delete(),
+      });
+      closeModal('modal-members');
       showToast('관리자 권한이 양도됐습니다.');
     } catch (err) {
       console.error(err);
-      showToast('오류가 발생했습니다.');
+      showToast('관리자 위임에 실패했습니다.');
     }
   });
+}
+
+function promptKickMember(tripId, uid) {
+  const trip = state.trips.find(t => t.id === tripId);
+  const name = memberDisplayName(trip, uid);
+  confirmAction(`"${name}" 님을 이 여행에서 추방할까요?`, async () => {
+    try {
+      await db.collection('trips').doc(tripId).update({
+        memberIds: firebase.firestore.FieldValue.arrayRemove(uid),
+        [`memberProfiles.${uid}`]: firebase.firestore.FieldValue.delete(),
+        [`memberRoles.${uid}`]: firebase.firestore.FieldValue.delete(),
+      });
+      showToast('멤버가 추방됐습니다.');
+    } catch (err) {
+      console.error(err);
+      showToast('추방에 실패했습니다.');
+    }
+  });
+}
+
+// 멤버 모달이 열려있는 동안 trip 데이터가 갱신되면 다시 그림
+export function refreshMembersModalIfOpen() {
+  const overlay = document.getElementById('modal-members');
+  if (!overlay?.classList.contains('active')) return;
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (trip) renderMembersModal(trip);
 }
 
 export function openTripModal(tripId = null) {
