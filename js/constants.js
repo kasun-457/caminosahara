@@ -13,13 +13,13 @@ export const CATEGORIES = {
 
 export const CATEGORY_FIELDS = {
   '관광': [
-    { key: 'address', label: '주소', icon: '📍', placeholder: '예: Calle Mayor 1, Madrid' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '예: Calle Mayor 1, Madrid' },
     { key: 'openHours', label: '운영시간', icon: '🕐', placeholder: '예: 10:00 - 20:00' },
     { key: 'price', label: '입장료', icon: '💰', placeholder: '예: 15유로 (성인)' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '식사': [
-    { key: 'address', label: '주소', icon: '📍', placeholder: '식당 주소' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '식당 주소' },
     { key: 'cuisine', label: '요리 종류', icon: '🍴', placeholder: '예: 스페인 타파스' },
     { key: 'price', label: '예상 가격', icon: '💰', placeholder: '예: 15-30유로' },
     { key: 'reservation', label: '예약 정보', icon: '📞', placeholder: '예약 시간 / 번호' },
@@ -36,7 +36,7 @@ export const CATEGORY_FIELDS = {
     { key: 'url', label: '예약/티켓 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '숙박': [
-    { key: 'address', label: '주소', icon: '📍', placeholder: '숙소 주소' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '숙소 주소' },
     { key: 'checkIn', label: '체크인', icon: '🔑', placeholder: '예: 16:00' },
     { key: 'checkOut', label: '체크아웃', icon: '🚪', placeholder: '예: 11:00' },
     { key: 'bookingNumber', label: '예약번호', icon: '🎫', placeholder: '' },
@@ -44,13 +44,13 @@ export const CATEGORY_FIELDS = {
     { key: 'url', label: '예약 사이트', icon: '🔗', placeholder: 'https://...' },
   ],
   '쇼핑': [
-    { key: 'address', label: '주소', icon: '📍', placeholder: '' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '' },
     { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
     { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '기타': [
-    { key: 'address', label: '위치', icon: '📍', placeholder: '' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
 };

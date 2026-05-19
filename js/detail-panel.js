@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { isOwner } from './trips.js';
 import { db } from './firebase.js';
-import { CATEGORY_FIELDS, PLACE_AC_KEYS } from './constants.js';
+import { CATEGORY_FIELDS, PLACE_AC_KEYS, CATEGORIES } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
 import {
@@ -129,6 +129,21 @@ export function setDetailMode(mode) {
   document.getElementById('dp-time').readOnly     = ro;
   document.getElementById('dp-end-time').readOnly = ro;
   document.getElementById('dp-category').disabled = ro;
+
+  // 카테고리 배지: 보기 모드 → 컬러 배지 표시 / 수정 모드 → select 표시
+  const catVal   = document.getElementById('dp-category').value;
+  const catMeta  = CATEGORIES[catVal] || CATEGORIES['기타'];
+  const badge    = document.getElementById('dp-cat-badge');
+  const select   = document.getElementById('dp-category');
+  if (ro) {
+    badge.textContent = `${catMeta.icon} ${catVal}`;
+    badge.style.setProperty('--cat-color', catMeta.color);
+    badge.style.display = '';
+    select.style.display = 'none';
+  } else {
+    badge.style.display = 'none';
+    select.style.display = '';
+  }
 
   // 보기 모드 푸터: 관리자 → 삭제+수정, 멤버 → 읽기 전용 라벨
   if (ro) {

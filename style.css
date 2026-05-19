@@ -949,6 +949,13 @@ label {
   text-transform: uppercase;
 }
 
+.label-optional {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 input[type="text"],
 input[type="date"],
 input[type="time"],
@@ -1699,6 +1706,23 @@ textarea { resize: vertical; min-height: 80px; }
 
 .dp-cat-select:focus { border-color: var(--accent); }
 
+/* 보기 모드 카테고리 배지 */
+.dp-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.75rem;
+  border-radius: 999px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--cat-color) 18%, transparent);
+  color: var(--cat-color);
+  border: 1px solid color-mix(in srgb, var(--cat-color) 40%, transparent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .dp-time-input {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -2270,6 +2294,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* 바디 (스크롤 영역) */
 .cal-body {
   display: flex;
+  align-items: flex-start;
   overflow-y: auto;
   height: calc(100vh - 280px);
   min-height: 400px;

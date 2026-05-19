@@ -86,21 +86,25 @@
       <button class="modal-close" data-close="modal-activity">✕</button>
     </div>
     <form id="form-activity" novalidate>
+      <div class="form-group">
+        <label for="activity-category">카테고리</label>
+        <select id="activity-category">
+          <option value="관광">🏛️ 관광</option>
+          <option value="식사">🍽️ 식사</option>
+          <option value="교통">🚌 교통</option>
+          <option value="숙박">🏨 숙박</option>
+          <option value="쇼핑">🛍️ 쇼핑</option>
+          <option value="기타">📌 기타</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="activity-time">시간 (선택)</label>
+          <label for="activity-time">시작 시간 <span class="label-optional">(선택)</span></label>
           <input type="time" id="activity-time">
         </div>
         <div class="form-group">
-          <label for="activity-category">카테고리</label>
-          <select id="activity-category">
-            <option value="관광">🏛️ 관광</option>
-            <option value="식사">🍽️ 식사</option>
-            <option value="교통">🚌 교통</option>
-            <option value="숙박">🏨 숙박</option>
-            <option value="쇼핑">🛍️ 쇼핑</option>
-            <option value="기타">📌 기타</option>
-          </select>
+          <label for="activity-end-time">종료 시간 <span class="label-optional">(선택)</span></label>
+          <input type="time" id="activity-end-time">
         </div>
       </div>
       <div class="form-group">
