@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { auth, googleProvider, db } from './firebase.js';
 import { showToast, generateShareCode } from './utils.js';
-import { subscribeToTrips, renderTripList, applySortPref } from './trips.js';
+import { subscribeToTrips, renderTripList, applySortPref, beginJoinFlow } from './trips.js';
 import { goBack } from './activities.js';
 
 export function setAuthMode(mode) {
@@ -215,26 +215,7 @@ export async function handleJoinFromUrl() {
   const joinCode = params.get('join');
   if (!tripId || !joinCode) return;
   window.history.replaceState({}, '', window.location.pathname);
-
-  try {
-    const docRef  = db.collection('trips').doc(tripId);
-    const docSnap = await docRef.get();
-    if (!docSnap.exists) { showToast('유효하지 않은 여행입니다.'); return; }
-
-    const trip = docSnap.data();
-    if (trip.shareCode !== joinCode) { showToast('초대 코드가 올바르지 않습니다.'); return; }
-    if (trip.memberIds.includes(state.currentUser.uid)) { showToast('이미 참여 중인 여행입니다.'); return; }
-
-    const u = state.currentUser;
-    await docRef.update({
-      memberIds: firebase.firestore.FieldValue.arrayUnion(u.uid),
-      [`memberProfiles.${u.uid}`]: { name: u.displayName || '', email: u.email || '' },
-    });
-    showToast(`"${trip.title}" 여행에 참여했습니다!`);
-  } catch (err) {
-    console.error(err);
-    showToast('초대 링크 처리 중 오류가 발생했습니다.');
-  }
+  await beginJoinFlow(tripId, joinCode);
 }
 
 // ── Auth 상태 감지 ─────────────────────────────────────────────────────────────

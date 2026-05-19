@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { isOwner } from './trips.js';
+import { canEdit } from './trips.js';
 import { db } from './firebase.js';
 import { CATEGORY_FIELDS, PLACE_AC_KEYS, CATEGORIES } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl, generateTimeOptions } from './utils.js';
@@ -118,8 +118,8 @@ export function setDetailMode(mode) {
   if (!panel) return;
 
   const trip    = state.trips.find(t => t.id === state.currentTripId);
-  const owner   = isOwner(trip);
-  // 멤버는 수정 모드 진입 자체를 막음
+  const owner   = canEdit(trip);
+  // 뷰어는 수정 모드 진입 자체를 막음
   const safeMode = (!owner && mode === 'edit') ? 'view' : mode;
   panel.dataset.mode = safeMode;
   const ro = safeMode === 'view';

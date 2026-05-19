@@ -8,9 +8,9 @@ import {
   toggleUserMenu, closeUserMenu, initAuthStateListener,
 } from './auth.js';
 import {
-  openTripModal, saveTripForm, copyShareLink,
+  openTripModal, saveTripForm,
   renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
-  leaveTrip, openTransferOwnerModal,
+  leaveTrip, openInviteModal, initInviteModal, initJoinRoomModal, openMembersModal,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -96,13 +96,17 @@ async function init() {
   document.getElementById('btn-new-trip-empty').addEventListener('click', () => openTripModal());
   document.getElementById('nav-back').addEventListener('click', goBack);
   document.getElementById('nav-logo').addEventListener('click', () => { if (state.currentTripId) goBack(); });
-  document.getElementById('btn-share-trip').addEventListener('click', () => copyShareLink(state.currentTripId));
+  document.getElementById('btn-share-trip').addEventListener('click', () => openInviteModal(state.currentTripId));
+  document.getElementById('btn-members').addEventListener('click', () => openMembersModal(state.currentTripId));
   document.getElementById('btn-edit-trip').addEventListener('click', () => openTripModal(state.currentTripId));
   document.getElementById('btn-delete-trip').addEventListener('click', () => {
     confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(state.currentTripId));
   });
   document.getElementById('btn-leave-trip').addEventListener('click', () => leaveTrip(state.currentTripId));
-  document.getElementById('btn-transfer-owner').addEventListener('click', () => openTransferOwnerModal(state.currentTripId));
+
+  // 초대 / 방 참여 모달 초기화
+  initInviteModal();
+  initJoinRoomModal();
 
   // 폼
   document.getElementById('form-trip').addEventListener('submit', saveTripForm);

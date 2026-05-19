@@ -4,24 +4,26 @@ import { getDays, fmtDate, fmtTab } from './utils.js';
 import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
 import { addDayCity, removeDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
+import { canEdit } from './trips.js';
 
 let _scrollObserver = null;
 let _programmaticScroll = false;
 let _programmaticScrollTimer = null;
 
-function buildActivityHTML(act, date) {
+function buildActivityHTML(act, date, editable) {
   const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
+  const btns = editable ? `
+          <div class="activity-btns">
+            <button class="icon-btn btn-edit-act" data-id="${act.id}" data-date="${date}" title="수정">✎</button>
+            <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
+          </div>` : '';
   return `
     <div class="activity-item" data-id="${act.id}">
       <div class="activity-time">${act.time || '—'}</div>
       <div class="activity-dot" style="background:${cat.color}"></div>
       <div class="activity-body">
         <div class="activity-header">
-          <span class="activity-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>
-          <div class="activity-btns">
-            <button class="icon-btn btn-edit-act" data-id="${act.id}" data-date="${date}" title="수정">✎</button>
-            <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
-          </div>
+          <span class="activity-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>${btns}
         </div>
         <h3 class="activity-title">${act.title}</h3>
         ${act.notes ? `<p class="activity-notes">${act.notes}</p>` : ''}
@@ -29,7 +31,7 @@ function buildActivityHTML(act, date) {
     </div>`;
 }
 
-function buildDaySectionHTML(date, dayData, idx) {
+function buildDaySectionHTML(date, dayData, idx, editable) {
   const sorted = [...(dayData?.activities || [])].sort((a, b) => {
     if (!a.time && !b.time) return 0;
     if (!a.time) return 1;
@@ -44,9 +46,19 @@ function buildDaySectionHTML(date, dayData, idx) {
   }
 
   const citiesHTML = cities.length > 0
-    ? cities.map(c => `<button class="city-pill btn-city-edit" data-date="${date}" style="background:${c.color}20;border-color:${c.color};color:${c.color}">${c.name}</button>`).join('')
+    ? cities.map(c => `<button class="city-pill ${editable ? 'btn-city-edit' : ''}" data-date="${date}" style="background:${c.color}20;border-color:${c.color};color:${c.color}">${c.name}</button>`).join('')
     : '';
-  const addCityBtnHTML = `<button class="city-pill city-pill-add btn-city-edit" data-date="${date}">＋ 도시</button>`;
+  const addCityBtnHTML = editable
+    ? `<button class="city-pill city-pill-add btn-city-edit" data-date="${date}">＋ 도시</button>`
+    : '';
+
+  const addBtnHTML = editable
+    ? `<button class="btn-primary btn-sm btn-add-activity" data-date="${date}">+ 일정 추가</button>`
+    : '';
+
+  const emptyMsg = editable
+    ? `이 날의 일정이 없어요. 일정을 추가해보세요!`
+    : `이 날의 일정이 없어요.`;
 
   return `
     <section class="day-section" id="day-section-${idx}" data-day="${idx}" data-date="${date}">
@@ -59,12 +71,12 @@ function buildDaySectionHTML(date, dayData, idx) {
             ${addCityBtnHTML}
           </div>
         </div>
-        <button class="btn-primary btn-sm btn-add-activity" data-date="${date}">+ 일정 추가</button>
+        ${addBtnHTML}
       </div>
       <div class="timeline">
         ${sorted.length === 0
-          ? `<div class="day-empty"><p>이 날의 일정이 없어요. 일정을 추가해보세요!</p></div>`
-          : sorted.map(act => buildActivityHTML(act, date)).join('')}
+          ? `<div class="day-empty"><p>${emptyMsg}</p></div>`
+          : sorted.map(act => buildActivityHTML(act, date, editable)).join('')}
       </div>
     </section>`;
 }
@@ -128,6 +140,7 @@ export function renderDayTabs(trip) {
   }));
 
   // ── 전체 일정 렌더 (도시 그룹 헤더 포함) ────────────────────────────────
+  const editable = canEdit(trip);
   let html = '';
   let lastCityKey = null;
   days.forEach((date, i) => {
@@ -145,7 +158,7 @@ export function renderDayTabs(trip) {
       </div>`;
     }
     lastCityKey = cityKey || null;
-    html += buildDaySectionHTML(date, dayData, i);
+    html += buildDaySectionHTML(date, dayData, i, editable);
   });
   panel.innerHTML = html;
 

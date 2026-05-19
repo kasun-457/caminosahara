@@ -2926,3 +2926,153 @@ textarea { resize: vertical; min-height: 80px; }
   font-size: 0.9rem;
   letter-spacing: 0.02em;
 }
+
+/* ── 초대 / 방 참여 / 참여자 관리 모달 ─────────────────────────────────── */
+.form-group.hidden { display: none; }
+
+.form-hint {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.room-type-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.room-type-opt {
+  flex: 1;
+  cursor: pointer;
+}
+
+.room-type-opt input[type="radio"] {
+  display: none;
+}
+
+.room-type-pill {
+  display: block;
+  text-align: center;
+  padding: 0.7rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  transition: all 0.18s;
+}
+
+.room-type-opt input:checked + .room-type-pill {
+  border-color: var(--accent);
+  background: rgba(200, 240, 96, 0.08);
+  color: var(--accent);
+}
+
+.invite-link-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.3rem;
+}
+
+.invite-link-wrap input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.invite-link-wrap input:focus { outline: none; }
+
+.invite-link-wrap .btn-outline { flex-shrink: 0; }
+
+/* 참여자 관리 모달 */
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.member-row-owner {
+  background: rgba(200, 240, 96, 0.04);
+  border-color: var(--accent);
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.member-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.member-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.member-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  background: var(--surface3);
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.member-badge-owner {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.member-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.member-role-select {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.member-role-select:focus { outline: none; border-color: var(--accent); }
+
+.member-promote, .member-kick {
+  white-space: nowrap;
+}

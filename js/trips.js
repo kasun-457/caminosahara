@@ -773,32 +773,7 @@ async function submitJoinTrip() {
   btn.textContent = '처리 중…';
 
   try {
-    const docRef  = db.collection('trips').doc(tripId);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) {
-      errEl.textContent = '유효하지 않은 여행입니다';
-      return;
-    }
-
-    const trip = docSnap.data();
-    if (trip.shareCode !== joinCode) {
-      errEl.textContent = '초대 코드가 올바르지 않습니다';
-      return;
-    }
-    if (trip.memberIds.includes(state.currentUser.uid)) {
-      closeModal('modal-trip');
-      showToast('이미 참여 중인 여행입니다');
-      return;
-    }
-
-    const u = state.currentUser;
-    await docRef.update({
-      memberIds: firebase.firestore.FieldValue.arrayUnion(u.uid),
-      [`memberProfiles.${u.uid}`]: { name: u.displayName || '', email: u.email || '' },
-    });
-    closeModal('modal-trip');
-    showToast(`"${trip.title}" 여행에 참여했습니다!`);
+    await beginJoinFlow(tripId, joinCode);
   } catch (err) {
     console.error(err);
     errEl.textContent = '참여 처리 중 오류가 발생했습니다';

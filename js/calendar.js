@@ -5,6 +5,7 @@ import { getDays, fmtTab, fmtShort, fmtDate, escapeHtml, showToast } from './uti
 import { openDetailPanel, closeDetailPanel } from './detail-panel.js';
 import { openActivityModal } from './activities.js';
 import { renderDayTabs } from './day-list.js';
+import { canEdit } from './trips.js';
 
 // ── 시간 변환 유틸 ────────────────────────────────────────────────────────────
 export function timeToMinutes(t) {
@@ -161,6 +162,8 @@ export function renderGridView(trip) {
   calEl.querySelectorAll('.cal-column').forEach(col => {
     col.addEventListener('click', e => {
       if (e.target.closest('.cal-event') || e.target.closest('.cal-allday-chip')) return;
+      const trip = state.trips.find(t => t.id === state.currentTripId);
+      if (!canEdit(trip)) return;
       const rect = col.getBoundingClientRect();
       const relY = e.clientY - rect.top + calBody.scrollTop;
       const min = Math.round(pxToMinutes(relY) / 15) * 15;
@@ -334,6 +337,8 @@ export function setupEventDrag(eventEl, calBody) {
   let dragState = null;
   eventEl.addEventListener('mousedown', e => {
     if (e.target.closest('.cal-event-resize')) return;
+    const trip = state.trips.find(t => t.id === state.currentTripId);
+    if (!canEdit(trip)) return;
     e.preventDefault();
     const rect = eventEl.getBoundingClientRect();
     const bodyRect = calBody.getBoundingClientRect();
@@ -380,6 +385,8 @@ export function setupEventDrag(eventEl, calBody) {
 export function setupEventResize(resizeEl, calBody) {
   let resizeState = null;
   resizeEl.addEventListener('mousedown', e => {
+    const trip = state.trips.find(t => t.id === state.currentTripId);
+    if (!canEdit(trip)) return;
     e.preventDefault(); e.stopPropagation();
     const eventEl = resizeEl.closest('.cal-event');
     resizeState = {
