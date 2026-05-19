@@ -199,6 +199,20 @@ export function renderMonthView(trip) {
       return `<div class="${cls}">${w}</div>`;
     }).join('');
 
+  // 도시 맵 구성 { date → {name, color} }
+  const cityMap = {};
+  trip.days.forEach(d => { if (d.city) cityMap[d.date] = d.city; });
+
+  function offsetDate(date, delta) {
+    const d = new Date(date + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    return dateToStr(d);
+  }
+
+  function sameCity(a, b) {
+    return a && b && a.name === b.name && a.color === b.color;
+  }
+
   const cellsHTML = cells.map(date => {
     const dateObj = new Date(date + 'T00:00:00');
     const inTrip = date >= trip.startDate && date <= trip.endDate;
@@ -235,7 +249,22 @@ export function renderMonthView(trip) {
               </div>`;
     }).join('');
 
+    // 도시 스트라이프
+    const city = cityMap[date];
+    let stripeHTML = '';
+    if (city && inTrip) {
+      const prevCity = dow > 0 ? cityMap[offsetDate(date, -1)] : null;
+      const nextCity = dow < 6 ? cityMap[offsetDate(date,  1)] : null;
+      const hasPrev  = sameCity(city, prevCity);
+      const hasNext  = sameCity(city, nextCity);
+      let stripeCls  = 'city-month-stripe';
+      if (hasPrev) stripeCls += ' stripe-cont-left';
+      if (hasNext) stripeCls += ' stripe-cont-right';
+      stripeHTML = `<div class="${stripeCls}" style="--stripe-color:${city.color}" title="${escapeHtml(city.name)}"></div>`;
+    }
+
     return `<div class="${cls}" data-date="${date}">
+      ${stripeHTML}
       <div class="cal-month-cell-header">
         <span class="cal-month-day-num">${dateObj.getDate()}</span>
         ${dayLabel}

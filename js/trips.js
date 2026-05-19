@@ -163,6 +163,8 @@ export function renderTripList() {
   grid.querySelectorAll('.trip-card').forEach(card => {
     card.addEventListener('contextmenu', e => {
       e.preventDefault();
+      const trip = state.trips.find(t => t.id === card.dataset.id);
+      if (!isOwner(trip)) return;
       showContextMenu(e.clientX, e.clientY, card.dataset.id);
     });
   });

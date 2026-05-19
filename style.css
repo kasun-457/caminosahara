@@ -2484,6 +2484,34 @@ textarea { resize: vertical; min-height: 80px; }
 
 .cal-month-cell:hover { background: var(--surface2); }
 
+/* ── 도시 스트라이프 (전체 뷰) ──────────────────────────────────────────── */
+.city-month-stripe {
+  height: 4px;
+  margin: -0.4rem -0.4rem 0.35rem;
+  background: var(--stripe-color);
+  border-radius: 2px;
+}
+
+/* 왼쪽 연결: 이전 셀과 같은 도시 → 왼쪽 끝 radius 제거 + 1px 넘겨 border 덮음 */
+.city-month-stripe.stripe-cont-left {
+  margin-left: calc(-0.4rem - 1px);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 오른쪽 연결: 다음 셀과 같은 도시 → 오른쪽 끝 radius 제거 + 1px 넘겨 border 덮음 */
+.city-month-stripe.stripe-cont-right {
+  margin-right: calc(-0.4rem - 1px);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+@media (max-width: 768px) {
+  .city-month-stripe { margin: -0.3rem -0.25rem 0.3rem; }
+  .city-month-stripe.stripe-cont-left  { margin-left:  calc(-0.25rem - 1px); }
+  .city-month-stripe.stripe-cont-right { margin-right: calc(-0.25rem - 1px); }
+}
+
 .cal-month-cell:nth-child(7n) { border-right: none; }
 
 .cal-month-cell.out-of-range {

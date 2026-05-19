@@ -23,6 +23,7 @@ export const CATEGORY_FIELDS = {
     { key: 'cuisine', label: '요리 종류', icon: '🍴', placeholder: '예: 스페인 타파스' },
     { key: 'price', label: '예상 가격', icon: '💰', placeholder: '예: 15-30유로' },
     { key: 'reservation', label: '예약 정보', icon: '📞', placeholder: '예약 시간 / 번호' },
+    { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '교통': [
     { key: 'mode', label: '교통수단', icon: '🚌', placeholder: '예: 기차 / 비행기 / 버스' },
@@ -32,6 +33,7 @@ export const CATEGORY_FIELDS = {
     { key: 'arriveTime', label: '도착 시각', icon: '🕓', placeholder: '예: 14:30' },
     { key: 'bookingNumber', label: '예약번호', icon: '🎫', placeholder: '티켓/편명/예약번호' },
     { key: 'price', label: '요금', icon: '💰', placeholder: '예: 65유로' },
+    { key: 'url', label: '예약/티켓 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '숙박': [
     { key: 'address', label: '주소', icon: '📍', placeholder: '숙소 주소' },
@@ -45,6 +47,7 @@ export const CATEGORY_FIELDS = {
     { key: 'address', label: '주소', icon: '📍', placeholder: '' },
     { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
     { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
+    { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '기타': [
     { key: 'address', label: '위치', icon: '📍', placeholder: '' },

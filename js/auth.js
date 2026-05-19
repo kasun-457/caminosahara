@@ -149,6 +149,7 @@ async function deleteOwnedTripsAndLeaveShared() {
     .filter(doc => !ownedIds.has(doc.id))
     .map(doc => doc.ref.update({
       memberIds: firebase.firestore.FieldValue.arrayRemove(uid),
+      [`memberProfiles.${uid}`]: firebase.firestore.FieldValue.delete(),
     }).catch(() => {}));
 
   await Promise.all([...deletes, ...leaves]);
