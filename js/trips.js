@@ -89,6 +89,7 @@ export function applySortPref() {
 
 export function subscribeToTrips() {
   if (state.unsubscribeTrips) state.unsubscribeTrips();
+  let _firstLoad = true;
   state.unsubscribeTrips = db.collection('trips')
     .where('memberIds', 'array-contains', state.currentUser.uid)
     .onSnapshot(snapshot => {
@@ -96,6 +97,18 @@ export function subscribeToTrips() {
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
       renderTripList();
+
+      // 첫 로드 시 해시에서 여행 ID 복원
+      if (_firstLoad) {
+        _firstLoad = false;
+        const hashId = window.location.hash.slice(1);
+        if (hashId && !state.currentTripId) {
+          const trip = state.trips.find(t => t.id === hashId);
+          if (trip) { openTrip(hashId); return; }
+          else window.history.replaceState(null, '', location.pathname + location.search);
+        }
+      }
+
       if (state.currentTripId) {
         const trip = state.trips.find(t => t.id === state.currentTripId);
         if (trip) {
@@ -258,6 +271,7 @@ export function isOwner(trip) {
 
 export function openTrip(tripId) {
   state.currentTripId = tripId;
+  window.history.replaceState(null, '', '#' + tripId);
   state.currentDayIndex = 0;
   state.calDateOffset = 0;
   const trip = state.trips.find(t => t.id === tripId);

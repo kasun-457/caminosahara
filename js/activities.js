@@ -131,6 +131,7 @@ export function confirmAction(message, callback) {
 export function goBack() {
   closeDetailPanel();
   state.currentTripId = null;
+  window.history.replaceState(null, '', location.pathname + location.search);
   document.getElementById('nav-breadcrumb').textContent = '';
   document.getElementById('nav-back').style.display = 'none';
   document.getElementById('view-trip').classList.remove('active');
