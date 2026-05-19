@@ -48,12 +48,16 @@ export async function saveActivityForm(e) {
     return;
   }
 
-  const time     = document.getElementById('activity-time').value;
-  let   endTime  = document.getElementById('activity-end-time').value;
   const category = document.getElementById('activity-category').value;
   const notes    = document.getElementById('activity-notes').value.trim();
   const details  = gatherActivityDetails(category);
   const date     = state.editingActivityDate;
+
+  // 동적 필드에서 시간 추출 (모든 카테고리가 startTime/endTime 또는 교통의 departTime/arriveTime 사용)
+  let time = category === '교통' ? details.departTime : details.startTime;
+  let endTime = category === '교통' ? details.arriveTime : details.endTime;
+  time = time || '';
+  endTime = endTime || '';
 
   // 시작 시간만 있고 종료 시간 없으면 → 1시간 후 기본값
   if (time && !endTime) {
@@ -61,7 +65,7 @@ export async function saveActivityForm(e) {
     const end = h * 60 + m + 60;
     endTime = `${String(Math.floor(end / 60) % 24).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
   }
-  // 시작 시간 없으면 종료 시간도 제거 (시간 없는 일정)
+  // 시작 시간 없으면 종료 시간도 제거
   if (!time) endTime = '';
 
   const trip = state.trips.find(t => t.id === state.currentTripId);

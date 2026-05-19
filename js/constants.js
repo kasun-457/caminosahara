@@ -13,12 +13,16 @@ export const CATEGORIES = {
 
 export const CATEGORY_FIELDS = {
   '관광': [
+    { key: 'startTime', label: '시작 시간', icon: '🕐', placeholder: '예: 09:00' },
+    { key: 'endTime', label: '종료 시간', icon: '🕓', placeholder: '예: 12:00' },
     { key: 'address', label: '장소', icon: '📍', placeholder: '예: Calle Mayor 1, Madrid' },
     { key: 'openHours', label: '운영시간', icon: '🕐', placeholder: '예: 10:00 - 20:00' },
     { key: 'price', label: '입장료', icon: '💰', placeholder: '예: 15유로 (성인)' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '식사': [
+    { key: 'startTime', label: '시작 시간', icon: '🕐', placeholder: '예: 12:30' },
+    { key: 'endTime', label: '종료 시간', icon: '🕓', placeholder: '예: 14:00' },
     { key: 'address', label: '장소', icon: '📍', placeholder: '식당 주소' },
     { key: 'cuisine', label: '요리 종류', icon: '🍴', placeholder: '예: 스페인 타파스' },
     { key: 'price', label: '예상 가격', icon: '💰', placeholder: '예: 15-30유로' },
@@ -37,19 +41,23 @@ export const CATEGORY_FIELDS = {
   ],
   '숙박': [
     { key: 'address', label: '장소', icon: '📍', placeholder: '숙소 주소' },
-    { key: 'checkIn', label: '체크인', icon: '🔑', placeholder: '예: 16:00' },
-    { key: 'checkOut', label: '체크아웃', icon: '🚪', placeholder: '예: 11:00' },
+    { key: 'startTime', label: '체크인', icon: '🔑', placeholder: '예: 16:00' },
+    { key: 'endTime', label: '체크아웃', icon: '🚪', placeholder: '예: 11:00' },
     { key: 'bookingNumber', label: '예약번호', icon: '🎫', placeholder: '' },
     { key: 'price', label: '숙박료', icon: '💰', placeholder: '예: 45유로/박' },
     { key: 'url', label: '예약 사이트', icon: '🔗', placeholder: 'https://...' },
   ],
   '쇼핑': [
+    { key: 'startTime', label: '시작 시간', icon: '🕐', placeholder: '예: 10:00' },
+    { key: 'endTime', label: '종료 시간', icon: '🕓', placeholder: '예: 12:00' },
     { key: 'address', label: '장소', icon: '📍', placeholder: '' },
     { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
     { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '기타': [
+    { key: 'startTime', label: '시작 시간', icon: '🕐', placeholder: '예: 14:00' },
+    { key: 'endTime', label: '종료 시간', icon: '🕓', placeholder: '예: 15:30' },
     { key: 'address', label: '장소', icon: '📍', placeholder: '' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],

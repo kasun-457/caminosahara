@@ -126,8 +126,6 @@ export function setDetailMode(mode) {
 
   document.getElementById('dp-title').readOnly    = ro;
   document.getElementById('dp-notes').readOnly    = ro;
-  document.getElementById('dp-time').readOnly     = ro;
-  document.getElementById('dp-end-time').readOnly = ro;
   document.getElementById('dp-category').disabled = ro;
 
   // 카테고리 배지: 보기 모드 → 컬러 배지 표시 / 수정 모드 → select 표시
@@ -285,8 +283,6 @@ export function openDetailPanel(activityId, date, mode = 'view') {
   setDetailMode(mode);
 
   document.getElementById('dp-category').value = act.category;
-  document.getElementById('dp-time').value = act.time || '';
-  document.getElementById('dp-end-time').value = act.endTime || '';
   document.getElementById('dp-title').value = act.title;
   document.getElementById('dp-title').classList.remove('invalid');
   document.getElementById('dp-notes').value = act.notes || '';
@@ -323,7 +319,6 @@ export async function saveDetailPanel() {
     return;
   }
 
-  const time = document.getElementById('dp-time').value;
   const category = document.getElementById('dp-category').value;
   const notes = document.getElementById('dp-notes').value.trim();
   const details = gatherDetailPanelFields();
@@ -335,7 +330,11 @@ export async function saveDetailPanel() {
   const act = dayData.activities.find(a => a.id === activityId);
   if (!act) return;
 
-  const endTime = document.getElementById('dp-end-time').value || null;
+  // 동적 필드에서 시간 추출 (모든 카테고리가 startTime/endTime 또는 교통의 departTime/arriveTime 사용)
+  let time = category === '교통' ? details.departTime : details.startTime;
+  let endTime = category === '교통' ? details.arriveTime : details.endTime;
+  time = time || '';
+  endTime = endTime || null;
   act.time = time; act.endTime = endTime; act.category = category;
   act.title = title; act.notes = notes; act.details = details;
 

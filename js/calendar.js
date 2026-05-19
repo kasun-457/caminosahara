@@ -80,14 +80,20 @@ export function renderGridView(trip) {
     return `<div class="cal-allday-col">${chips}</div>`;
   }).join('');
 
+  const MIN_EVENT_PX = 28; // 최소 카드 높이
+
   const colsHTML = visibleDates.map(date => {
     const dayData = trip.days.find(d => d.date === date) || { activities: [] };
     const eventsHTML = dayData.activities.filter(a => a.time).map(act => {
       const startMin = timeToMinutes(act.time);
-      const top  = minutesToPx(startMin);
-      const cat  = CATEGORIES[act.category] || CATEGORIES['기타'];
+      const endMin   = act.endTime ? timeToMinutes(act.endTime) : null;
+      const top      = minutesToPx(startMin);
+      const height   = endMin && endMin > startMin
+        ? Math.max(MIN_EVENT_PX, minutesToPx(endMin - startMin))
+        : HOUR_PX; // 종료 시간 없으면 1시간 높이 기본값
+      const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
       return `<div class="cal-event" data-id="${act.id}" data-date="${date}"
-                   style="top:${top}px;--ecolor:${cat.color}">
+                   style="top:${top}px;height:${height}px;--ecolor:${cat.color}">
                 <div class="cal-event-inner">
                   <div class="cal-event-title">${escapeHtml(act.title)}</div>
                   <div class="cal-event-time">${act.time}${act.endTime ? ' – ' + act.endTime : ''}</div>
