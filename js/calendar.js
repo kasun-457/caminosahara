@@ -205,9 +205,12 @@ export function renderMonthView(trip) {
       return `<div class="${cls}">${w}</div>`;
     }).join('');
 
-  // 도시 맵 구성 { date → {name, color} }
+  // 도시 맵 구성 { date → {name, color} } (마이그레이션: cities 배열 → 첫 도시 사용)
   const cityMap = {};
-  trip.days.forEach(d => { if (d.city) cityMap[d.date] = d.city; });
+  trip.days.forEach(d => {
+    const cities = d.cities || (d.city ? [d.city] : []);
+    if (cities.length > 0) cityMap[d.date] = cities[0];
+  });
 
   function offsetDate(date, delta) {
     const d = new Date(date + 'T00:00:00');

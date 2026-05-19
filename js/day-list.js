@@ -3,7 +3,7 @@ import { CATEGORIES } from './constants.js';
 import { getDays, fmtDate, fmtTab } from './utils.js';
 import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
-import { saveDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
+import { addDayCity, removeDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
 
 let _scrollObserver = null;
 let _programmaticScroll = false;
@@ -36,17 +36,28 @@ function buildDaySectionHTML(date, dayData, idx) {
     if (!b.time) return -1;
     return a.time.localeCompare(b.time);
   });
-  const city = dayData?.city;
-  const cityBtnHTML = city
-    ? `<button class="city-pill btn-city-edit" data-date="${date}" style="background:${city.color}20;border-color:${city.color};color:${city.color}">${city.name}</button>`
-    : `<button class="city-pill city-pill-add btn-city-edit" data-date="${date}">＋ 도시</button>`;
+
+  // 마이그레이션 지원 (이전 단일 city → cities 배열)
+  const cities = dayData?.cities || [];
+  if (!dayData?.cities && dayData?.city) {
+    cities.push(dayData.city);
+  }
+
+  const citiesHTML = cities.length > 0
+    ? cities.map(c => `<button class="city-pill btn-city-edit" data-date="${date}" style="background:${c.color}20;border-color:${c.color};color:${c.color}">${c.name}</button>`).join('')
+    : '';
+  const addCityBtnHTML = `<button class="city-pill city-pill-add btn-city-edit" data-date="${date}">＋ 도시</button>`;
+
   return `
     <section class="day-section" id="day-section-${idx}" data-day="${idx}" data-date="${date}">
       <div class="activities-header">
         <div class="activities-date-group">
           <span class="activities-day-badge">Day ${idx + 1}</span>
           <h2 class="activities-date">${fmtDate(date)}</h2>
-          ${cityBtnHTML}
+          <div class="cities-group">
+            ${citiesHTML}
+            ${addCityBtnHTML}
+          </div>
         </div>
         <button class="btn-primary btn-sm btn-add-activity" data-date="${date}">+ 일정 추가</button>
       </div>
@@ -121,14 +132,16 @@ export function renderDayTabs(trip) {
   let lastCityKey = null;
   days.forEach((date, i) => {
     const dayData = trip.days.find(d => d.date === date);
-    const city = dayData?.city;
-    const cityKey = city ? `${city.name}__${city.color}` : null;
+    // 마이그레이션: 이전 city → cities 배열
+    const cities = dayData?.cities || (dayData?.city ? [dayData.city] : []);
+    const primaryCity = cities[0];
+    const cityKey = primaryCity ? `${primaryCity.name}__${primaryCity.color}` : null;
 
-    // 도시가 바뀌었을 때만 그룹 헤더 삽입
+    // 도시가 바뀌었을 때만 그룹 헤더 삽입 (첫 도시 기준)
     if (cityKey && cityKey !== lastCityKey) {
-      html += `<div class="city-group-header" style="--city-color:${city.color}">
+      html += `<div class="city-group-header" style="--city-color:${primaryCity.color}">
         <span class="city-group-dot"></span>
-        <span class="city-group-name">${city.name}</span>
+        <span class="city-group-name">${primaryCity.name}</span>
       </div>`;
     }
     lastCityKey = cityKey || null;
@@ -173,18 +186,37 @@ export function renderDayTabs(trip) {
       e.stopPropagation();
       const date = btn.dataset.date;
       const dayData = trip.days.find(d => d.date === date);
-      const currentCity = dayData?.city || null;
 
-      // 이 여행에서 사용 중인 고유 도시 목록 (현재 날짜 제외, 이름 기준 중복 제거)
+      // 마이그레이션: 이전 city → cities 배열
+      let currentCities = dayData?.cities || [];
+      if (!dayData?.cities && dayData?.city) {
+        currentCities = [dayData.city];
+      }
+
+      // 이 여행에서 사용 중인 모든 도시 (현재 날짜 제외, 중복 제거)
       const seen = new Set();
-      const existingCities = trip.days
-        .filter(d => d.date !== date && d.city)
-        .map(d => d.city)
-        .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; });
-
-      openCityPopover(btn, currentCity, existingCities, async (city) => {
-        await saveDayCity(trip.id, date, city);
+      const existingCities = [];
+      trip.days.forEach(d => {
+        const citiesToCheck = d.cities || (d.city ? [d.city] : []);
+        citiesToCheck.forEach(c => {
+          if (!seen.has(c.name)) {
+            existingCities.push(c);
+            seen.add(c.name);
+          }
+        });
       });
+
+      openCityPopover(
+        btn,
+        currentCities,
+        existingCities,
+        async (city) => {
+          await addDayCity(trip.id, date, city);
+        },
+        async (cityName) => {
+          await removeDayCity(trip.id, date, cityName);
+        }
+      );
     });
   });
 
