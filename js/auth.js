@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { auth, googleProvider, db } from './firebase.js';
+import { auth, googleProvider, appleProvider, db } from './firebase.js';
 import { showToast, generateShareCode } from './utils.js';
 import { subscribeToTrips, renderTripList } from './trips.js';
 import { goBack } from './activities.js';
@@ -43,6 +43,15 @@ export function authErrorMessage(err) {
 export async function signInWithGoogle() {
   try {
     await auth.signInWithPopup(googleProvider);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('auth-error').textContent = authErrorMessage(err);
+  }
+}
+
+export async function signInWithApple() {
+  try {
+    await auth.signInWithPopup(appleProvider);
   } catch (err) {
     console.error(err);
     document.getElementById('auth-error').textContent = authErrorMessage(err);
@@ -131,59 +140,41 @@ export function closeUserMenu() {
 
 export function openDeleteAccountModal() {
   closeUserMenu();
-  const isPassword = state.currentUser.providerData.some(p => p.providerId === 'password');
-  document.getElementById('reauth-password-group').style.display = isPassword ? 'flex' : 'none';
-  document.getElementById('reauth-password').value = '';
   document.getElementById('delete-error').textContent = '';
-  document.getElementById('form-delete-account').dataset.provider = isPassword ? 'password' : 'google';
-  // openModal은 main.js에서 import하지 않으므로 직접 조작
   document.getElementById('modal-delete-account').classList.add('active');
 }
 
-async function reauthenticate(provider) {
-  if (provider === 'password') {
-    const password = document.getElementById('reauth-password').value;
-    if (!password) throw { code: 'auth/missing-password' };
-    const credential = firebase.auth.EmailAuthProvider.credential(state.currentUser.email, password);
-    await state.currentUser.reauthenticateWithCredential(credential);
-  } else {
-    await state.currentUser.reauthenticateWithPopup(googleProvider);
-  }
-}
-
 async function deleteOwnedTripsAndLeaveShared() {
-  const ownedSnap  = await db.collection('trips').where('ownerId', '==', state.currentUser.uid).get();
-  const sharedSnap = await db.collection('trips')
-    .where('memberIds', 'array-contains', state.currentUser.uid).get();
-
-  const batch = db.batch();
-  ownedSnap.forEach(doc => batch.delete(doc.ref));
+  const uid = state.currentUser.uid;
+  const [ownedSnap, sharedSnap] = await Promise.all([
+    db.collection('trips').where('ownerId', '==', uid).get(),
+    db.collection('trips').where('memberIds', 'array-contains', uid).get(),
+  ]);
 
   const ownedIds = new Set(ownedSnap.docs.map(d => d.id));
-  sharedSnap.forEach(doc => {
-    if (!ownedIds.has(doc.id)) {
-      batch.update(doc.ref, {
-        memberIds: firebase.firestore.FieldValue.arrayRemove(state.currentUser.uid),
-      });
-    }
-  });
-  await batch.commit();
+
+  const deletes = ownedSnap.docs.map(doc => doc.ref.delete().catch(() => {}));
+  const leaves  = sharedSnap.docs
+    .filter(doc => !ownedIds.has(doc.id))
+    .map(doc => doc.ref.update({
+      memberIds: firebase.firestore.FieldValue.arrayRemove(uid),
+    }).catch(() => {}));
+
+  await Promise.all([...deletes, ...leaves]);
 }
 
 export async function submitDeleteAccount(e) {
   e.preventDefault();
-  const errEl    = document.getElementById('delete-error');
-  const btn      = document.getElementById('btn-confirm-delete-account');
-  const provider = document.getElementById('form-delete-account').dataset.provider;
+  const errEl = document.getElementById('delete-error');
+  const btn   = document.getElementById('btn-confirm-delete-account');
   errEl.textContent = '';
   btn.disabled = true;
   const original = btn.textContent;
   btn.textContent = '처리 중...';
 
   try {
-    await reauthenticate(provider);
     if (state.unsubscribeTrips) { state.unsubscribeTrips(); state.unsubscribeTrips = null; }
-    await deleteOwnedTripsAndLeaveShared();
+    await deleteOwnedTripsAndLeaveShared().catch(() => {});
     await state.currentUser.delete();
     document.getElementById('modal-delete-account').classList.remove('active');
     showToast('회원탈퇴가 완료되었습니다.');
