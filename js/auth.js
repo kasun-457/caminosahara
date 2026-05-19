@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { auth, googleProvider, appleProvider, db } from './firebase.js';
 import { showToast, generateShareCode } from './utils.js';
-import { subscribeToTrips, renderTripList } from './trips.js';
+import { subscribeToTrips, renderTripList, applySortPref } from './trips.js';
 import { goBack } from './activities.js';
 
 export function setAuthMode(mode) {
@@ -249,6 +249,7 @@ export function initAuthStateListener() {
       showApp();
       updateUserUI(user);
       await migrateLegacyData(user);
+      applySortPref();
       subscribeToTrips();
       await handleJoinFromUrl();
     } else {

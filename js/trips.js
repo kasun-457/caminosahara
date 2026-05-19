@@ -13,6 +13,14 @@ function getManualOrder() {
 function saveManualOrder(ids) {
   localStorage.setItem(`tripOrder_${state.currentUser?.uid}`, JSON.stringify(ids));
 }
+
+// ── 정렬 기준 저장/불러오기 (계정별) ──────────────────────────────────────────
+function loadSortPref() {
+  return localStorage.getItem(`tripSort_${state.currentUser?.uid}`) || 'startDate';
+}
+function saveSortPref(sort) {
+  localStorage.setItem(`tripSort_${state.currentUser?.uid}`, sort);
+}
 const SORT_LABELS = {
   recent:    '최신 등록순',
   startDate: '여행 날짜순',
@@ -56,6 +64,7 @@ export function initSortDropdown() {
   menu.querySelectorAll('.sort-option').forEach(opt => {
     opt.addEventListener('click', () => {
       state.tripSort = opt.dataset.sort;
+      saveSortPref(state.tripSort);
       document.getElementById('sort-label').textContent = SORT_LABELS[state.tripSort];
       menu.querySelectorAll('.sort-option').forEach(o => o.classList.toggle('active', o === opt));
       menu.classList.remove('open');
@@ -64,6 +73,18 @@ export function initSortDropdown() {
   });
 
   document.addEventListener('click', () => menu.classList.remove('open'));
+}
+
+export function applySortPref() {
+  state.tripSort = loadSortPref();
+  const label = document.getElementById('sort-label');
+  if (label) label.textContent = SORT_LABELS[state.tripSort] ?? SORT_LABELS.startDate;
+  const menu = document.getElementById('sort-dropdown-menu');
+  if (menu) {
+    menu.querySelectorAll('.sort-option').forEach(o =>
+      o.classList.toggle('active', o.dataset.sort === state.tripSort)
+    );
+  }
 }
 
 export function subscribeToTrips() {
