@@ -75,10 +75,7 @@ export function renderGridView(trip) {
     const dayData = trip.days.find(d => d.date === date) || { activities: [] };
     const chips = dayData.activities.filter(a => !a.time).map(act => {
       const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
-      return `<div class="cal-allday-chip" data-id="${act.id}" data-date="${date}"
-                   style="--ecolor:${cat.color};background:color-mix(in srgb,${cat.color} 18%,transparent);color:${cat.color};border:1px solid color-mix(in srgb,${cat.color} 35%,transparent)">
-                ${cat.icon} ${escapeHtml(act.title)}
-              </div>`;
+      return `<div class="cal-allday-chip" data-id="${act.id}" data-date="${date}" style="--ecolor:${cat.color};background:color-mix(in srgb,${cat.color} 18%,transparent);color:${cat.color};border:1px solid color-mix(in srgb,${cat.color} 35%,transparent)">${cat.icon} ${escapeHtml(act.title)}</div>`;
     }).join('');
     return `<div class="cal-allday-col">${chips}</div>`;
   }).join('');
