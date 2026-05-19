@@ -82,3 +82,24 @@ export function showToast(msg) {
     setTimeout(() => t.remove(), 300);
   }, 2500);
 }
+
+// 15분 단위 시간 선택 관련 유틸
+export function generateTimeOptions() {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hStr = String(h).padStart(2, '0');
+      const mStr = String(m).padStart(2, '0');
+      times.push(`${hStr}:${mStr}`);
+    }
+  }
+  return times;
+}
+
+export function renderTimeSelect(value = '') {
+  const times = generateTimeOptions();
+  const options = times.map(t =>
+    `<option value="${t}" ${t === value ? 'selected' : ''}>${t}</option>`
+  ).join('');
+  return `<select class="time-select">${options}</select>`;
+}

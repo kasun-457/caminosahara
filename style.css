@@ -2868,3 +2868,10 @@ textarea { resize: vertical; min-height: 80px; }
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+/* 15분 단위 시간 선택 */
+.time-select {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}

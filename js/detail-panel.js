@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { isOwner } from './trips.js';
 import { db } from './firebase.js';
 import { CATEGORY_FIELDS, PLACE_AC_KEYS, CATEGORIES } from './constants.js';
-import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
+import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl, generateTimeOptions } from './utils.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
 import {
   renderAttachmentsSection, uploadAttachment, deleteAttachment, ATTACHABLE_CATEGORIES,
@@ -212,6 +212,31 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`;
     }
+    // 시간 필드: 드롭다운으로 렌더링
+    if (f.type === 'time') {
+      if (isViewMode) {
+        return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div>${val || '—'}</div>
+      </div>
+    </div>`;
+      }
+      const times = generateTimeOptions();
+      return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <select class="dp-field-input time-select" id="dpf-${f.key}" data-key="${f.key}">
+          <option value="">선택 안함</option>
+          ${times.map(t => `<option value="${t}" ${t === val ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+    }
     return `
     <div class="dp-field-row">
       <span class="dp-field-icon">${f.icon}</span>
@@ -225,7 +250,7 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`;
   }).join('');
-  container.querySelectorAll('.dp-field-input').forEach(inp => {
+  container.querySelectorAll('.dp-field-input:not(.time-select)').forEach(inp => {
     if (isViewMode) inp.readOnly = true;
     inp.addEventListener('input', () => {
       updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
@@ -236,6 +261,12 @@ export function renderDetailPanelFields(category, details = {}) {
       });
       state.dpAutocompletes.push(ac);
     }
+  });
+  // 시간 선택 이벤트
+  container.querySelectorAll('.dp-field-input.time-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
+    });
   });
 }
 
