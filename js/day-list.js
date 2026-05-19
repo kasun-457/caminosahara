@@ -3,6 +3,7 @@ import { CATEGORIES } from './constants.js';
 import { getDays, fmtDate, fmtTab } from './utils.js';
 import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
+import { saveDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
 
 let _scrollObserver = null;
 let _programmaticScroll = false;
@@ -35,12 +36,17 @@ function buildDaySectionHTML(date, dayData, idx) {
     if (!b.time) return -1;
     return a.time.localeCompare(b.time);
   });
+  const city = dayData?.city;
+  const cityBtnHTML = city
+    ? `<button class="city-pill btn-city-edit" data-date="${date}" style="background:${city.color}20;border-color:${city.color};color:${city.color}">${city.name}</button>`
+    : `<button class="city-pill city-pill-add btn-city-edit" data-date="${date}">＋ 도시</button>`;
   return `
     <section class="day-section" id="day-section-${idx}" data-day="${idx}" data-date="${date}">
       <div class="activities-header">
         <div class="activities-date-group">
           <span class="activities-day-badge">Day ${idx + 1}</span>
           <h2 class="activities-date">${fmtDate(date)}</h2>
+          ${cityBtnHTML}
         </div>
         <button class="btn-primary btn-sm btn-add-activity" data-date="${date}">+ 일정 추가</button>
       </div>
@@ -110,11 +116,25 @@ export function renderDayTabs(trip) {
     scrollTabTo(tabsEl, state.currentDayIndex);
   }));
 
-  // ── 전체 일정 렌더 ────────────────────────────────────────────────────────
-  panel.innerHTML = days.map((date, i) => {
+  // ── 전체 일정 렌더 (도시 그룹 헤더 포함) ────────────────────────────────
+  let html = '';
+  let lastCityKey = null;
+  days.forEach((date, i) => {
     const dayData = trip.days.find(d => d.date === date);
-    return buildDaySectionHTML(date, dayData, i);
-  }).join('');
+    const city = dayData?.city;
+    const cityKey = city ? `${city.name}__${city.color}` : null;
+
+    // 도시가 바뀌었을 때만 그룹 헤더 삽입
+    if (cityKey && cityKey !== lastCityKey) {
+      html += `<div class="city-group-header" style="--city-color:${city.color}">
+        <span class="city-group-dot"></span>
+        <span class="city-group-name">${city.name}</span>
+      </div>`;
+    }
+    lastCityKey = cityKey || null;
+    html += buildDaySectionHTML(date, dayData, i);
+  });
+  panel.innerHTML = html;
 
   // + 일정 추가 버튼
   panel.querySelectorAll('.btn-add-activity').forEach(btn => {
@@ -144,6 +164,19 @@ export function renderDayTabs(trip) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       confirmAction('이 일정을 삭제할까요?', () => deleteActivity(trip.id, btn.dataset.date, btn.dataset.id));
+    });
+  });
+
+  // 도시 버튼
+  panel.querySelectorAll('.btn-city-edit').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const date = btn.dataset.date;
+      const dayData = trip.days.find(d => d.date === date);
+      const currentCity = dayData?.city || null;
+      openCityPopover(btn, currentCity, async (city) => {
+        await saveDayCity(trip.id, date, city);
+      });
     });
   });
 
