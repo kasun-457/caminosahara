@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { isOwner } from './trips.js';
 import { db } from './firebase.js';
 import { CATEGORY_FIELDS, PLACE_AC_KEYS } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
@@ -115,14 +116,35 @@ function renderAndBindAttachments() {
 export function setDetailMode(mode) {
   const panel = document.getElementById('detail-panel');
   if (!panel) return;
-  panel.dataset.mode = mode;
-  const ro = mode === 'view';
+
+  const trip    = state.trips.find(t => t.id === state.currentTripId);
+  const owner   = isOwner(trip);
+  // 멤버는 수정 모드 진입 자체를 막음
+  const safeMode = (!owner && mode === 'edit') ? 'view' : mode;
+  panel.dataset.mode = safeMode;
+  const ro = safeMode === 'view';
 
   document.getElementById('dp-title').readOnly    = ro;
   document.getElementById('dp-notes').readOnly    = ro;
   document.getElementById('dp-time').readOnly     = ro;
   document.getElementById('dp-end-time').readOnly = ro;
   document.getElementById('dp-category').disabled = ro;
+
+  // 보기 모드 푸터: 관리자 → 삭제+수정, 멤버 → 읽기 전용 라벨
+  if (ro) {
+    const showOwner  = owner;
+    document.getElementById('dp-delete').style.display         = showOwner ? '' : 'none';
+    document.getElementById('dp-edit').style.display           = showOwner ? '' : 'none';
+    document.getElementById('dp-readonly-label').style.display = showOwner ? 'none' : '';
+    document.getElementById('dp-cancel').style.display         = 'none';
+    document.getElementById('dp-save').style.display           = 'none';
+  } else {
+    document.getElementById('dp-delete').style.display         = 'none';
+    document.getElementById('dp-edit').style.display           = 'none';
+    document.getElementById('dp-readonly-label').style.display = 'none';
+    document.getElementById('dp-cancel').style.display         = '';
+    document.getElementById('dp-save').style.display           = '';
+  }
 
   // 동적 필드는 모드에 따라 input ↔ 하이퍼링크 형태가 달라지므로 재렌더
   if (state.detailContext?.activityId) {

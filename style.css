@@ -419,6 +419,45 @@ h1 {
   padding-top: 0.5rem;
 }
 
+/* ── 관리자 양도 멤버 목록 ────────────────────────────────────────────── */
+.transfer-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.transfer-member-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  text-align: left;
+}
+
+.transfer-member-btn:hover {
+  background: var(--surface3, rgba(255,255,255,0.06));
+  border-color: var(--accent);
+}
+
+.transfer-member-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.transfer-member-email {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 /* ── 날짜 탭 ──────────────────────────────────────────────────────────── */
 .day-tabs-wrapper {
   overflow: hidden;
@@ -1322,33 +1361,6 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-google:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(255,255,255,0.18);
-}
-
-.btn-apple {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.85rem;
-  font-family: 'DM Mono', monospace;
-  font-size: 0.92rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  padding: 0.95rem 2.2rem;
-  cursor: pointer;
-  transition: transform 0.18s, box-shadow 0.18s;
-  margin-top: 0.75rem;
-}
-
-.btn-apple:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
-}
-
-.apple-icon {
-  flex-shrink: 0;
 }
 
 .google-g {
@@ -2733,6 +2745,35 @@ textarea { resize: vertical; min-height: 80px; }
   text-transform: uppercase;
   margin-bottom: 0.6rem;
 }
+
+.city-popover-prev-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.city-prev-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.city-prev-chip {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  line-height: 1.6;
+}
+
+.city-prev-chip:hover { opacity: 0.75; transform: scale(0.96); }
 
 .city-popover-input {
   width: 100%;

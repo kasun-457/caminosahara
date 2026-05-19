@@ -250,6 +250,10 @@ function setupDragSort(grid) {
   });
 }
 
+export function isOwner(trip) {
+  return trip?.ownerId === state.currentUser?.uid;
+}
+
 export function openTrip(tripId) {
   state.currentTripId = tripId;
   state.currentDayIndex = 0;
@@ -266,6 +270,13 @@ export function openTrip(tripId) {
   document.getElementById('trip-hero').style.setProperty('--trip-color', trip.color);
   document.getElementById('day-tabs').style.setProperty('--trip-color', trip.color);
 
+  // 관리자 전용 버튼 / 멤버 전용 버튼 표시 제어
+  const owner = isOwner(trip);
+  document.getElementById('btn-edit-trip').style.display        = owner ? '' : 'none';
+  document.getElementById('btn-delete-trip').style.display      = owner ? '' : 'none';
+  document.getElementById('btn-transfer-owner').style.display   = owner && trip.memberIds.length > 1 ? '' : 'none';
+  document.getElementById('btn-leave-trip').style.display       = owner ? 'none' : '';
+
   state.calView = 'list';
   document.querySelectorAll('.cal-view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'list'));
   document.getElementById('list-view-tabs').style.display   = '';
@@ -276,6 +287,59 @@ export function openTrip(tripId) {
   renderDayTabs(trip);
   document.getElementById('view-list').classList.remove('active');
   document.getElementById('view-trip').classList.add('active');
+}
+
+export function leaveTrip(tripId) {
+  confirmAction('이 여행에서 나갈까요? 다시 초대 링크를 받아야 재참여할 수 있습니다.', async () => {
+    try {
+      await db.collection('trips').doc(tripId).update({
+        memberIds: firebase.firestore.FieldValue.arrayRemove(state.currentUser.uid),
+        [`memberProfiles.${state.currentUser.uid}`]: firebase.firestore.FieldValue.delete(),
+      });
+      goBack();
+      showToast('여행에서 나갔습니다.');
+    } catch (err) {
+      console.error(err);
+      showToast('오류가 발생했습니다.');
+    }
+  });
+}
+
+export async function openTransferOwnerModal(tripId) {
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip) return;
+
+  const profiles = trip.memberProfiles || {};
+  const others   = trip.memberIds.filter(uid => uid !== state.currentUser.uid);
+
+  const list = document.getElementById('transfer-member-list');
+  list.innerHTML = others.map(uid => {
+    const p    = profiles[uid] || {};
+    const name = p.name || p.email || uid.slice(0, 8) + '…';
+    const sub  = p.email && p.name ? `<span class="transfer-member-email">${p.email}</span>` : '';
+    return `<button class="transfer-member-btn" data-uid="${uid}">
+      <span class="transfer-member-name">${name}</span>${sub}
+    </button>`;
+  }).join('');
+
+  list.querySelectorAll('.transfer-member-btn').forEach(btn => {
+    btn.addEventListener('click', () => transferOwner(tripId, btn.dataset.uid));
+  });
+
+  openModal('modal-transfer-owner');
+}
+
+async function transferOwner(tripId, newOwnerUid) {
+  confirmAction('정말 관리자 권한을 넘기시겠어요? 본인은 일반 멤버가 됩니다.', async () => {
+    try {
+      await db.collection('trips').doc(tripId).update({ ownerId: newOwnerUid });
+      closeModal('modal-transfer-owner');
+      showToast('관리자 권한이 양도됐습니다.');
+    } catch (err) {
+      console.error(err);
+      showToast('오류가 발생했습니다.');
+    }
+  });
 }
 
 export function openTripModal(tripId = null) {
@@ -393,7 +457,11 @@ async function submitJoinTrip() {
       return;
     }
 
-    await docRef.update({ memberIds: firebase.firestore.FieldValue.arrayUnion(state.currentUser.uid) });
+    const u = state.currentUser;
+    await docRef.update({
+      memberIds: firebase.firestore.FieldValue.arrayUnion(u.uid),
+      [`memberProfiles.${u.uid}`]: { name: u.displayName || '', email: u.email || '' },
+    });
     closeModal('modal-trip');
     showToast(`"${trip.title}" 여행에 참여했습니다!`);
   } catch (err) {
@@ -439,10 +507,12 @@ export async function saveTripForm(e) {
         title: name, destination: dest, startDate: start, endDate: end, color: state.selectedColor,
       });
     } else {
+      const u = state.currentUser;
       await db.collection('trips').add({
         title: name, destination: dest, startDate: start, endDate: end, color: state.selectedColor,
-        ownerId: state.currentUser.uid,
-        memberIds: [state.currentUser.uid],
+        ownerId: u.uid,
+        memberIds: [u.uid],
+        memberProfiles: { [u.uid]: { name: u.displayName || '', email: u.email || '' } },
         shareCode: generateShareCode(),
         days: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),

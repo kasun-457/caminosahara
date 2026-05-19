@@ -32,7 +32,7 @@ export async function saveDayCity(tripId, date, city) {
 // ── 도시 팝오버 ──────────────────────────────────────────────────────────────
 let _popover = null;
 
-export function openCityPopover(anchorEl, currentCity, onSave) {
+export function openCityPopover(anchorEl, currentCity, existingCities, onSave) {
   closeCityPopover();
 
   const name  = currentCity?.name  || '';
@@ -40,8 +40,20 @@ export function openCityPopover(anchorEl, currentCity, onSave) {
 
   const el = document.createElement('div');
   el.className = 'city-popover';
+
+  const prevHTML = existingCities.length > 0 ? `
+    <div class="city-popover-prev-label">이전 도시</div>
+    <div class="city-prev-chips">
+      ${existingCities.map(c => `
+        <button type="button" class="city-prev-chip" data-name="${escapeHtml(c.name)}" data-color="${c.color}"
+                style="background:${c.color}20;border-color:${c.color};color:${c.color}">
+          ${escapeHtml(c.name)}
+        </button>`).join('')}
+    </div>` : '';
+
   el.innerHTML = `
     <div class="city-popover-title">여행 도시</div>
+    ${prevHTML}
     <input class="city-popover-input" id="city-name-input" type="text"
            placeholder="예: 바르셀로나" value="${escapeHtml(name)}" autocomplete="off">
     <div class="city-color-swatches">
@@ -59,11 +71,22 @@ export function openCityPopover(anchorEl, currentCity, onSave) {
 
   // 색상 선택
   let selectedColor = color;
+  function selectColor(c) {
+    selectedColor = c;
+    el.querySelectorAll('.city-color-swatch').forEach(b =>
+      b.classList.toggle('active', b.dataset.color === c)
+    );
+  }
+
   el.querySelectorAll('.city-color-swatch').forEach(btn => {
-    btn.addEventListener('click', () => {
-      el.querySelectorAll('.city-color-swatch').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedColor = btn.dataset.color;
+    btn.addEventListener('click', () => selectColor(btn.dataset.color));
+  });
+
+  // 이전 도시 칩 클릭 → 이름·색상 자동 입력
+  el.querySelectorAll('.city-prev-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelector('#city-name-input').value = chip.dataset.name;
+      selectColor(chip.dataset.color);
     });
   });
 

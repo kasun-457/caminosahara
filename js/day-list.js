@@ -174,7 +174,15 @@ export function renderDayTabs(trip) {
       const date = btn.dataset.date;
       const dayData = trip.days.find(d => d.date === date);
       const currentCity = dayData?.city || null;
-      openCityPopover(btn, currentCity, async (city) => {
+
+      // 이 여행에서 사용 중인 고유 도시 목록 (현재 날짜 제외, 이름 기준 중복 제거)
+      const seen = new Set();
+      const existingCities = trip.days
+        .filter(d => d.date !== date && d.city)
+        .map(d => d.city)
+        .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; });
+
+      openCityPopover(btn, currentCity, existingCities, async (city) => {
         await saveDayCity(trip.id, date, city);
       });
     });

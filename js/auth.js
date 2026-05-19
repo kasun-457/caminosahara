@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { auth, googleProvider, appleProvider, db } from './firebase.js';
+import { auth, googleProvider, db } from './firebase.js';
 import { showToast, generateShareCode } from './utils.js';
 import { subscribeToTrips, renderTripList, applySortPref } from './trips.js';
 import { goBack } from './activities.js';
@@ -43,15 +43,6 @@ export function authErrorMessage(err) {
 export async function signInWithGoogle() {
   try {
     await auth.signInWithPopup(googleProvider);
-  } catch (err) {
-    console.error(err);
-    document.getElementById('auth-error').textContent = authErrorMessage(err);
-  }
-}
-
-export async function signInWithApple() {
-  try {
-    await auth.signInWithPopup(appleProvider);
   } catch (err) {
     console.error(err);
     document.getElementById('auth-error').textContent = authErrorMessage(err);
@@ -233,7 +224,11 @@ export async function handleJoinFromUrl() {
     if (trip.shareCode !== joinCode) { showToast('초대 코드가 올바르지 않습니다.'); return; }
     if (trip.memberIds.includes(state.currentUser.uid)) { showToast('이미 참여 중인 여행입니다.'); return; }
 
-    await docRef.update({ memberIds: firebase.firestore.FieldValue.arrayUnion(state.currentUser.uid) });
+    const u = state.currentUser;
+    await docRef.update({
+      memberIds: firebase.firestore.FieldValue.arrayUnion(u.uid),
+      [`memberProfiles.${u.uid}`]: { name: u.displayName || '', email: u.email || '' },
+    });
     showToast(`"${trip.title}" 여행에 참여했습니다!`);
   } catch (err) {
     console.error(err);

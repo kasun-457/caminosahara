@@ -3,13 +3,14 @@ import { closeModal } from './utils.js';
 import { DatePicker } from './date-picker.js';
 import { attachTimePickers } from './time-picker.js';
 import {
-  setAuthMode, signInWithGoogle, signInWithApple, submitAuthForm, signOutUser,
+  setAuthMode, signInWithGoogle, submitAuthForm, signOutUser,
   openDeleteAccountModal, submitDeleteAccount,
   toggleUserMenu, closeUserMenu, initAuthStateListener,
 } from './auth.js';
 import {
   openTripModal, saveTripForm, copyShareLink,
   renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
+  leaveTrip, openTransferOwnerModal,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -65,7 +66,6 @@ async function init() {
 
   // Auth
   document.getElementById('btn-google-login').addEventListener('click', signInWithGoogle);
-  document.getElementById('btn-apple-login').addEventListener('click', signInWithApple);
   document.getElementById('form-auth').addEventListener('submit', submitAuthForm);
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => setAuthMode(tab.dataset.tab));
@@ -101,6 +101,8 @@ async function init() {
   document.getElementById('btn-delete-trip').addEventListener('click', () => {
     confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(state.currentTripId));
   });
+  document.getElementById('btn-leave-trip').addEventListener('click', () => leaveTrip(state.currentTripId));
+  document.getElementById('btn-transfer-owner').addEventListener('click', () => openTransferOwnerModal(state.currentTripId));
 
   // 폼
   document.getElementById('form-trip').addEventListener('submit', saveTripForm);
