@@ -42,8 +42,10 @@ function buildActivityHTML(act, date, editable) {
         <div class="activity-header">
           <span class="activity-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>${btns}
         </div>
-        <h3 class="activity-title">${act.title}</h3>
-        ${priceHTML}
+        <div class="activity-title-row">
+          <h3 class="activity-title">${act.title}</h3>
+          ${priceHTML}
+        </div>
       </div>
     </div>`;
 }

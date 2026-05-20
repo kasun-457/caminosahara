@@ -758,13 +758,20 @@ h1 {
   white-space: pre-wrap;
 }
 
+.activity-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .activity-price {
-  display: inline-block;
-  margin-top: 0.45rem;
+  flex-shrink: 0;
   font-family: 'DM Mono', monospace;
   font-size: 0.82rem;
   color: var(--accent-warm);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 /* ── 버튼 ─────────────────────────────────────────────────────────────── */
