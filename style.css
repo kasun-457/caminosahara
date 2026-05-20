@@ -886,6 +886,7 @@ h1 {
 .modal-overlay.active .modal { transform: translateY(0) scale(1); }
 
 .modal-sm { max-width: 400px; }
+.modal-lg { max-width: 720px; }
 
 .modal-header {
   display: flex;
@@ -3182,5 +3183,186 @@ textarea { resize: vertical; min-height: 80px; }
 .member-role-select:focus { outline: none; border-color: var(--accent); }
 
 .member-promote, .member-kick {
+  white-space: nowrap;
+}
+
+/* ── 가계부 모달 ───────────────────────────────────────────────────────── */
+.budget-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0.5rem 0 1rem;
+}
+
+.budget-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--muted);
+}
+
+.budget-empty-hint {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted-dim);
+  line-height: 1.6;
+}
+
+.budget-section {
+  margin-bottom: 1.5rem;
+}
+
+.budget-section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+/* 합계 칩 */
+.budget-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.budget-total-chip {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  min-width: 130px;
+}
+
+.budget-total-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.budget-total-amount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 0.15rem;
+}
+
+/* 카테고리별 표 */
+.budget-cat-table-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.budget-cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.budget-cat-table th,
+.budget-cat-table td {
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.budget-cat-table tbody tr:last-child td { border-bottom: none; }
+
+.budget-cat-table th {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.budget-cat-cell { font-weight: 600; }
+
+.budget-amount-cell {
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+}
+
+/* 일자별 지출 */
+.budget-days {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.budget-day {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+}
+
+.budget-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.budget-day-date {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.budget-day-total {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.budget-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+}
+
+.budget-item {
+  display: grid;
+  grid-template-columns: 56px 22px 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.4rem 0.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.budget-item:hover { background: var(--surface3); }
+
+.budget-item-time {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.budget-item-cat { font-size: 1rem; text-align: center; }
+
+.budget-item-title {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-item-amount {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--text);
   white-space: nowrap;
 }

@@ -53,12 +53,14 @@ export const CATEGORY_FIELDS = {
     { key: 'address', label: '장소', icon: '📍', placeholder: '' },
     { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
     { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
+    { key: 'price', label: '지출 금액', icon: '💰', placeholder: '예: 30유로' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '기타': [
     { key: 'startTime', label: '시작 시간', icon: '🕐', type: 'time' },
     { key: 'endTime', label: '종료 시간', icon: '🕓', type: 'time' },
     { key: 'address', label: '장소', icon: '📍', placeholder: '' },
+    { key: 'price', label: '지출 금액', icon: '💰', placeholder: '예: 10유로' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
 };

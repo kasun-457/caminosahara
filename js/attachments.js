@@ -3,8 +3,8 @@ import { state } from './state.js';
 import { db, storage } from './firebase.js';
 import { uid, showToast, escapeHtml } from './utils.js';
 
-// 첨부파일을 지원하는 카테고리
-export const ATTACHABLE_CATEGORIES = new Set(['교통', '관광', '숙박']);
+// 모든 카테고리에서 파일 업로드 허용
+export const ATTACHABLE_CATEGORIES = new Set(['교통', '관광', '숙박', '식사', '쇼핑', '기타']);
 
 // 허용 파일 형식 / 최대 크기 (10MB)
 const ACCEPT_TYPES = 'application/pdf,image/png,image/jpeg,image/jpg,image/webp,image/heic';
@@ -124,7 +124,7 @@ export function renderAttachmentsSection(category, attachments = [], isViewMode)
     </li>`).join('');
 
   const emptyMsg = attachments.length === 0
-    ? `<li class="dp-att-empty">${isViewMode ? '첨부된 파일이 없습니다.' : '예약 확인서·티켓 PDF나 이미지를 업로드하세요.'}</li>`
+    ? `<li class="dp-att-empty">${isViewMode ? '첨부된 파일이 없습니다.' : '관련된 PDF·이미지 등을 업로드하세요.'}</li>`
     : '';
 
   const uploadUi = isViewMode ? '' : `
@@ -142,7 +142,7 @@ export function renderAttachmentsSection(category, attachments = [], isViewMode)
 
   return `
     <div class="dp-att-section${isViewMode ? '' : ' dp-att-droppable'}" id="dp-att-section">
-      <span class="dp-section-label">📎 예약 정보 파일</span>
+      <span class="dp-section-label">📎 관련 파일</span>
       <ul class="dp-att-list">${items}${emptyMsg}</ul>
       ${uploadUi}
     </div>`;
