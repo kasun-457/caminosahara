@@ -1235,6 +1235,13 @@ textarea { resize: vertical; min-height: 80px; }
   width: 100%;
 }
 
+/* dp-field-input이 price-input-row 안에 있을 때는 width:100% 해제 → flex:1로 동작 */
+.price-input-row .dp-field-input {
+  width: 0 !important;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
 .dp-price-currency-view {
   color: var(--muted);
   font-family: 'DM Mono', monospace;
