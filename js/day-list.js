@@ -18,17 +18,8 @@ function buildActivityHTML(act, date, editable) {
             <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
           </div>` : '';
 
-  // 장소: 교통은 출발지→도착지, 나머지는 address
-  let placeText = '';
-  const d = act.details || {};
-  if (act.category === '교통') {
-    if (d.fromLocation && d.toLocation) placeText = `${d.fromLocation} → ${d.toLocation}`;
-    else placeText = d.fromLocation || d.toLocation || '';
-  } else {
-    placeText = d.address || '';
-  }
-  const placeHTML = placeText
-    ? `<span class="activity-place">${placeText}</span>`
+  const notesHTML = act.notes
+    ? `<span class="activity-notes-inline">${act.notes.replace(/\s+/g, ' ').trim()}</span>`
     : '';
 
   return `
@@ -41,7 +32,7 @@ function buildActivityHTML(act, date, editable) {
         </div>
         <div class="activity-title-row">
           <h3 class="activity-title">${act.title}</h3>
-          ${placeHTML}
+          ${notesHTML}
         </div>
       </div>
     </div>`;

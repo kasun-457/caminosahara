@@ -765,15 +765,14 @@ h1 {
   gap: 1rem;
 }
 
-.activity-place {
-  flex-shrink: 0;
-  max-width: 45%;
-  font-size: 0.82rem;
-  color: var(--muted);
+.activity-notes-inline {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: #9a9a9a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: right;
 }
 
 /* ── 버튼 ─────────────────────────────────────────────────────────────── */
