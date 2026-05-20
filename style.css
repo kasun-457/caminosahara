@@ -758,6 +758,23 @@ h1 {
   white-space: pre-wrap;
 }
 
+.activity-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.activity-notes-inline {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: #f1f1f1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── 버튼 ─────────────────────────────────────────────────────────────── */
 .btn-primary {
   font-family: 'DM Mono', monospace;
@@ -1069,6 +1086,184 @@ textarea { resize: vertical; min-height: 80px; }
   border-color: var(--text);
   transform: scale(1.18);
   box-shadow: 0 0 0 3px var(--bg), 0 6px 18px rgba(0,0,0,0.4);
+}
+
+/* ── 통화 선택 (여행 모달) ────────────────────────────────────────────── */
+.currency-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.currency-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 1.6rem;
+}
+
+.currency-chip-empty {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 0.25rem 0;
+}
+
+.currency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  padding: 0.28rem 0.5rem 0.28rem 0.7rem;
+  border-radius: 999px;
+}
+
+.currency-chip-x {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+}
+
+.currency-chip-x:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.currency-search-wrap {
+  position: relative;
+}
+
+.currency-search-input {
+  width: 100%;
+}
+
+.currency-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--surface2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.3rem;
+}
+
+.currency-dropdown.open { display: block; }
+
+.currency-opt {
+  display: grid;
+  grid-template-columns: 2.2rem 3rem 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text);
+  transition: background 0.12s;
+}
+
+.currency-opt:hover,
+.currency-opt.active {
+  background: var(--surface3);
+}
+
+.currency-opt.picked {
+  color: var(--accent);
+}
+
+.currency-opt-empty {
+  color: var(--muted);
+  cursor: default;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+}
+
+.currency-opt-empty:hover { background: transparent; }
+
+.currency-opt-sym {
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.currency-opt-code {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.currency-opt-name {
+  color: var(--text-dim);
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.currency-opt-check {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── 금액 + 통화 셀렉트 (일정 폼 / 상세 패널) ────────────────────────── */
+.price-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* 전역 width:100% 재정의 */
+.price-input-row input[type="text"] {
+  flex: 1 1 0%;
+  width: 0 !important;   /* flex가 크기를 결정하도록 */
+  min-width: 0;
+}
+
+.price-currency-select {
+  flex: 0 0 auto;
+  width: auto !important; /* 전역 select width:100% 재정의 */
+  min-width: 5.8rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.84rem;
+  padding-left: 0.65rem;
+  padding-right: 2rem;
+}
+
+/* 상세 패널 내부 price-input-row도 전체 너비 사용 */
+.dp-field-content .price-input-row {
+  width: 100%;
+}
+
+/* dp-field-input이 price-input-row 안에 있을 때는 width:100% 해제 → flex:1로 동작 */
+.price-input-row .dp-field-input {
+  width: 0 !important;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.dp-price-currency-view {
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  margin-left: 0.3rem;
 }
 
 /* ── 로그인 오버레이 ──────────────────────────────────────────────────── */

@@ -17,6 +17,11 @@ function buildActivityHTML(act, date, editable) {
             <button class="icon-btn btn-edit-act" data-id="${act.id}" data-date="${date}" title="수정">✎</button>
             <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
           </div>` : '';
+
+  const notesHTML = act.notes
+    ? `<span class="activity-notes-inline">${act.notes.replace(/\s+/g, ' ').trim()}</span>`
+    : '';
+
   return `
     <div class="activity-item" data-id="${act.id}">
       <div class="activity-time">${act.time || '—'}</div>
@@ -25,8 +30,10 @@ function buildActivityHTML(act, date, editable) {
         <div class="activity-header">
           <span class="activity-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>${btns}
         </div>
-        <h3 class="activity-title">${act.title}</h3>
-        ${act.notes ? `<p class="activity-notes">${act.notes}</p>` : ''}
+        <div class="activity-title-row">
+          <h3 class="activity-title">${act.title}</h3>
+          ${notesHTML}
+        </div>
       </div>
     </div>`;
 }

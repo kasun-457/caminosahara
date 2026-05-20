@@ -11,7 +11,7 @@ import {
   openTripModal, saveTripForm,
   renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
   leaveTrip, openInviteModal, initInviteModal, initJoinRoomModal, openMembersModal,
-  openEditNicknameModal, initNicknameModal,
+  openEditNicknameModal, initNicknameModal, initTripCurrencyPicker,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -112,6 +112,7 @@ async function init() {
   initInviteModal();
   initJoinRoomModal();
   initNicknameModal();
+  initTripCurrencyPicker();
 
   // 폼
   document.getElementById('form-trip').addEventListener('submit', saveTripForm);

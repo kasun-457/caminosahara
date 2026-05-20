@@ -4,7 +4,7 @@ import { db, storage } from './firebase.js';
 import { uid, showToast, escapeHtml } from './utils.js';
 
 // 모든 카테고리에서 파일 업로드 허용
-export const ATTACHABLE_CATEGORIES = new Set(['교통', '관광', '숙박', '식사', '쇼핑', '기타']);
+export const ATTACHABLE_CATEGORIES = new Set(['교통', '관광', '숙박', '식사', '쇼핑', '체험', '기타']);
 
 // 허용 파일 형식 / 최대 크기 (10MB)
 const ACCEPT_TYPES = 'application/pdf,image/png,image/jpeg,image/jpg,image/webp,image/heic';

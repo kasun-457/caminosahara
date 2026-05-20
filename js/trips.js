@@ -4,6 +4,11 @@ import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal,
 import { renderDayTabs } from './day-list.js';
 import { renderGridView } from './calendar.js';
 import { goBack, confirmAction, deleteTrip } from './activities.js';
+import { CURRENCIES, DEFAULT_CURRENCY, getCurrency, filterCurrencies, currencyShortLabel } from './currencies.js';
+
+// ── 여행 모달의 통화 선택 상태 ────────────────────────────────────────────────
+let _selectedCurrencies = [];
+let _currencyDropdownIdx = -1;
 
 // ── 수동 정렬 순서 (localStorage) ─────────────────────────────────────────────
 function getManualOrder() {
@@ -788,6 +793,8 @@ export function openTripModal(tripId = null) {
     document.getElementById('trip-start').value = trip.startDate;
     document.getElementById('trip-end').value = trip.endDate;
     state.selectedColor = trip.color;
+    _selectedCurrencies = Array.isArray(trip.currencies) && trip.currencies.length
+      ? [...trip.currencies] : [];
     // 수정 모드: 탭 숨기고 새 여행 폼만 표시
     tabs.style.display = 'none';
     form.style.display = '';
@@ -796,10 +803,13 @@ export function openTripModal(tripId = null) {
     document.getElementById('modal-trip-heading').textContent = '새 여행 추가';
     document.getElementById('form-trip').reset();
     state.selectedColor = '#c8f060';
+    _selectedCurrencies = [];
     // 추가 모드: 탭 표시, 새 여행 탭으로 초기화
     tabs.style.display = '';
     setTripModalTab('new');
   }
+  renderCurrencyChips();
+  renderCurrencyDropdown('');
 
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.color === state.selectedColor);
@@ -878,6 +888,124 @@ async function submitJoinTrip() {
   }
 }
 
+// ── 여행 모달 통화 선택 UI ────────────────────────────────────────────────────
+function renderCurrencyChips() {
+  const wrap = document.getElementById('trip-currency-chips');
+  if (!wrap) return;
+  if (_selectedCurrencies.length === 0) {
+    wrap.innerHTML = `<span class="currency-chip-empty">선택된 통화 없음 · 기본 ₩ KRW</span>`;
+    return;
+  }
+  wrap.innerHTML = _selectedCurrencies.map(code => {
+    const label = currencyShortLabel(code);
+    return `<span class="currency-chip" data-code="${code}">
+      ${escapeHtml(label)}
+      <button type="button" class="currency-chip-x" data-code="${code}" aria-label="제거">✕</button>
+    </span>`;
+  }).join('');
+  wrap.querySelectorAll('.currency-chip-x').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _selectedCurrencies = _selectedCurrencies.filter(c => c !== btn.dataset.code);
+      renderCurrencyChips();
+      renderCurrencyDropdown(document.getElementById('trip-currency-search')?.value || '');
+    });
+  });
+}
+
+function renderCurrencyDropdown(query) {
+  const dd = document.getElementById('trip-currency-dropdown');
+  if (!dd) return;
+  const q = (query || '').trim();
+  const results = filterCurrencies(q).slice(0, 60);
+  _currencyDropdownIdx = -1;
+  if (results.length === 0) {
+    dd.innerHTML = `<div class="currency-opt currency-opt-empty">검색 결과 없음</div>`;
+    return;
+  }
+  dd.innerHTML = results.map(c => {
+    const picked = _selectedCurrencies.includes(c.code);
+    return `<div class="currency-opt${picked ? ' picked' : ''}" data-code="${c.code}">
+      <span class="currency-opt-sym">${escapeHtml(c.symbol)}</span>
+      <span class="currency-opt-code">${c.code}</span>
+      <span class="currency-opt-name">${escapeHtml(c.ko)}</span>
+      ${picked ? '<span class="currency-opt-check">✓</span>' : ''}
+    </div>`;
+  }).join('');
+  dd.querySelectorAll('.currency-opt[data-code]').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault();
+      toggleCurrency(el.dataset.code);
+    });
+  });
+}
+
+function toggleCurrency(code) {
+  if (!getCurrency(code)) return;
+  if (_selectedCurrencies.includes(code)) {
+    _selectedCurrencies = _selectedCurrencies.filter(c => c !== code);
+  } else {
+    _selectedCurrencies.push(code);
+  }
+  renderCurrencyChips();
+  renderCurrencyDropdown(document.getElementById('trip-currency-search')?.value || '');
+}
+
+export function initTripCurrencyPicker() {
+  const search = document.getElementById('trip-currency-search');
+  const dd     = document.getElementById('trip-currency-dropdown');
+  const wrap   = document.getElementById('trip-currency-picker');
+  if (!search || !dd || !wrap) return;
+
+  search.addEventListener('focus', () => {
+    renderCurrencyDropdown(search.value);
+    dd.classList.add('open');
+  });
+  search.addEventListener('input', () => {
+    renderCurrencyDropdown(search.value);
+    dd.classList.add('open');
+  });
+  search.addEventListener('keydown', e => {
+    const opts = [...dd.querySelectorAll('.currency-opt[data-code]')];
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _currencyDropdownIdx = Math.min(_currencyDropdownIdx + 1, opts.length - 1);
+      updateDropdownHighlight(opts);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _currencyDropdownIdx = Math.max(_currencyDropdownIdx - 1, 0);
+      updateDropdownHighlight(opts);
+    } else if (e.key === 'Enter') {
+      if (_currencyDropdownIdx >= 0 && opts[_currencyDropdownIdx]) {
+        e.preventDefault();
+        toggleCurrency(opts[_currencyDropdownIdx].dataset.code);
+      }
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    } else if (e.key === 'Backspace' && !search.value && _selectedCurrencies.length) {
+      _selectedCurrencies.pop();
+      renderCurrencyChips();
+      renderCurrencyDropdown('');
+    }
+  });
+  document.addEventListener('mousedown', e => {
+    if (!wrap.contains(e.target)) dd.classList.remove('open');
+  });
+}
+
+function updateDropdownHighlight(opts) {
+  opts.forEach((el, i) => el.classList.toggle('active', i === _currencyDropdownIdx));
+  if (_currencyDropdownIdx >= 0 && opts[_currencyDropdownIdx]) {
+    opts[_currencyDropdownIdx].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+// 외부에서 trip의 통화 목록(기본 [KRW]) 조회
+export function getTripCurrencies(trip) {
+  if (!trip) return [DEFAULT_CURRENCY];
+  const list = Array.isArray(trip.currencies) ? trip.currencies.filter(c => getCurrency(c)) : [];
+  return list.length ? list : [DEFAULT_CURRENCY];
+}
+
 export function clearTripErrors() {
   ['err-trip-name', 'err-trip-dest', 'err-trip-start', 'err-trip-end'].forEach(id => {
     document.getElementById(id).textContent = '';
@@ -906,15 +1034,19 @@ export async function saveTripForm(e) {
   }
   if (!valid) return;
 
+  const currencies = _selectedCurrencies.length ? [..._selectedCurrencies] : [DEFAULT_CURRENCY];
+
   try {
     if (state.editingTripId) {
       await db.collection('trips').doc(state.editingTripId).update({
         title: name, destination: dest, startDate: start, endDate: end, color: state.selectedColor,
+        currencies,
       });
     } else {
       const u = state.currentUser;
       await db.collection('trips').add({
         title: name, destination: dest, startDate: start, endDate: end, color: state.selectedColor,
+        currencies,
         ownerId: u.uid,
         memberIds: [u.uid],
         memberProfiles: { [u.uid]: { name: u.displayName || '', email: u.email || '' } },

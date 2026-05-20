@@ -1,10 +1,13 @@
 import { state } from './state.js';
 import { CATEGORIES } from './constants.js';
 import { escapeHtml, fmtDate, openModal } from './utils.js';
+import { getTripCurrencies } from './trips.js';
+import { getCurrency, formatMoney, currencyShortLabel } from './currencies.js';
 
 // ── 가격 문자열 파싱 ──────────────────────────────────────────────────────────
-// "15유로", "15-30유로", "65,000원", "$45.50/박" 등에서 첫 숫자와 통화를 추출
-export function parsePrice(str) {
+// "15유로", "15-30유로", "65,000원", "$45.50/박" 등에서 첫 숫자와 통화 코드 추출
+// explicitCode가 주어지면 통화 자동감지를 건너뛴다.
+export function parsePrice(str, explicitCode, fallbackCode) {
   if (!str) return null;
   const s = String(str).trim();
   // 첫 번째 숫자(쉼표·소수점 포함)
@@ -13,34 +16,55 @@ export function parsePrice(str) {
   const amount = parseFloat(m[1].replace(/,/g, ''));
   if (!isFinite(amount) || amount <= 0) return null;
 
-  // 통화 자동 감지
-  let currency = '기타';
-  if (/유로|€|EUR/i.test(s))         currency = '€';
-  else if (/원|₩|KRW/i.test(s))      currency = '₩';
-  else if (/달러|\$|USD/i.test(s))   currency = '$';
-  else if (/엔|円|¥|JPY/i.test(s))   currency = '¥';
-  else if (/파운드|£|GBP/i.test(s))  currency = '£';
-  else if (/위안|元|CNY|RMB/i.test(s)) currency = '¥(CNY)';
+  let code = explicitCode && getCurrency(explicitCode) ? explicitCode : null;
 
-  return { amount, currency, raw: s };
+  if (!code) {
+    // 텍스트에서 통화 자동 감지 → ISO 코드
+    if (/유로|€|\bEUR\b/i.test(s))                 code = 'EUR';
+    else if (/원\b|₩|\bKRW\b/i.test(s))            code = 'KRW';
+    else if (/달러|\$|\bUSD\b/i.test(s))           code = 'USD';
+    else if (/엔\b|円|¥|\bJPY\b/i.test(s))         code = 'JPY';
+    else if (/파운드|£|\bGBP\b/i.test(s))          code = 'GBP';
+    else if (/위안|元|\bCNY\b|\bRMB\b/i.test(s))    code = 'CNY';
+    else if (/바트|฿|\bTHB\b/i.test(s))            code = 'THB';
+    else if (/동\b|₫|\bVND\b/i.test(s))            code = 'VND';
+    else if (/페소|\bPHP\b/i.test(s))              code = 'PHP';
+    else if (/링깃|\bMYR\b/i.test(s))              code = 'MYR';
+    else if (/루피아|\bIDR\b/i.test(s))            code = 'IDR';
+    else if (/루피\b|₹|\bINR\b/i.test(s))          code = 'INR';
+  }
+
+  if (!code) code = fallbackCode || null;
+
+  return { amount, currency: code || '기타', raw: s };
 }
 
 function formatAmount(amount, currency) {
-  const rounded = Math.round(amount * 100) / 100;
-  const num = (Number.isInteger(rounded) ? rounded : rounded.toFixed(2))
-    .toLocaleString('ko-KR');
-  if (!currency || currency === '기타') return `${num}`;
-  if (currency === '₩' || currency === '$' || currency === '£') return `${currency}${num}`;
-  return `${num} ${currency}`;
+  if (!currency || currency === '기타') {
+    const rounded = Math.round(amount * 100) / 100;
+    const num = (Number.isInteger(rounded) ? rounded : rounded.toFixed(2))
+      .toLocaleString('ko-KR');
+    return `${num}`;
+  }
+  return formatMoney(amount, currency);
+}
+
+function currencyLabel(code) {
+  if (!code || code === '기타') return '통화 미상';
+  return currencyShortLabel(code);
 }
 
 // trip의 모든 활동에서 지출 항목 추출
 function collectExpenses(trip) {
   const items = [];
+  const tripCurs = getTripCurrencies(trip);
+  // 기본 fallback: trip 통화가 1개면 그것, 여러 개면 첫 번째 (선택값이 없을 때만)
+  const fallbackCode = tripCurs[0];
   (trip.days || []).forEach(day => {
     (day.activities || []).forEach(act => {
       const priceStr = act.details?.price;
-      const parsed = parsePrice(priceStr);
+      const explicit = act.details?.priceCurrency;
+      const parsed = parsePrice(priceStr, explicit, fallbackCode);
       if (!parsed) return;
       items.push({
         date: day.date,
@@ -102,7 +126,7 @@ function renderBudgetModal(trip) {
   // 합계 칩
   const totalsHTML = currencies.map(c => `
     <div class="budget-total-chip">
-      <span class="budget-total-label">${c === '기타' ? '통화 미상' : c}</span>
+      <span class="budget-total-label">${escapeHtml(currencyLabel(c))}</span>
       <span class="budget-total-amount">${formatAmount(totals[c], c)}</span>
     </div>`).join('');
 
@@ -119,7 +143,7 @@ function renderBudgetModal(trip) {
     </tr>`;
   }).join('');
   const catHeaderCells = currencies.map(c =>
-    `<th class="budget-amount-cell">${c === '기타' ? '미상' : c}</th>`
+    `<th class="budget-amount-cell">${escapeHtml(currencyLabel(c))}</th>`
   ).join('');
 
   // 일자별 그룹 + 항목
