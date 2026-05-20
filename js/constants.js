@@ -8,6 +8,7 @@ export const CATEGORIES = {
   '교통': { icon: '🚌', color: '#60a0f0' },
   '숙박': { icon: '🏨', color: '#c060f0' },
   '쇼핑': { icon: '🛍️', color: '#f060a0' },
+  '체험': { icon: '🎟️', color: '#60f0c0' },
   '기타': { icon: '📌', color: '#7a7a82' },
 };
 
@@ -54,6 +55,15 @@ export const CATEGORY_FIELDS = {
     { key: 'openHours', label: '영업시간', icon: '🕐', placeholder: '' },
     { key: 'items', label: '구매 품목', icon: '🛍️', placeholder: '예: 기념품, 식료품' },
     { key: 'price', label: '지출 금액', icon: '💰', placeholder: '예: 30유로' },
+    { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
+  ],
+  '체험': [
+    { key: 'startTime', label: '시작 시간', icon: '🕐', type: 'time' },
+    { key: 'endTime', label: '종료 시간', icon: '🕓', type: 'time' },
+    { key: 'address', label: '장소', icon: '📍', placeholder: '예: 체험 장소 주소' },
+    { key: 'openHours', label: '운영시간', icon: '🕐', placeholder: '예: 10:00 - 18:00' },
+    { key: 'reservation', label: '예약 정보', icon: '📞', placeholder: '예약 시간 / 번호' },
+    { key: 'price', label: '체험료', icon: '💰', placeholder: '예: 40유로' },
     { key: 'url', label: '관련 링크', icon: '🔗', placeholder: 'https://...' },
   ],
   '기타': [
