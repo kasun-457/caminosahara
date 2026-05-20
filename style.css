@@ -709,6 +709,8 @@ h1 {
   border-radius: var(--radius-sm);
   padding: 1.1rem 1.3rem;
   margin-bottom: 1rem;
+  min-width: 0;
+  overflow: hidden;
   transition: border-color 0.22s, transform 0.22s, background 0.22s;
 }
 
@@ -763,6 +765,7 @@ h1 {
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+  overflow: hidden;
 }
 
 .activity-notes-inline {
