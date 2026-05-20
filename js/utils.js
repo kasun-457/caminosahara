@@ -36,9 +36,11 @@ export function fmtDate(dateStr) {
 }
 
 export function fmtShort(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('ko-KR', {
-    month: 'numeric', day: 'numeric',
-  });
+  const d = new Date(dateStr + 'T00:00:00');
+  const yy = String(d.getFullYear()).slice(2);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${yy}.${m}.${day}`;
 }
 
 export function fmtTab(dateStr) {
