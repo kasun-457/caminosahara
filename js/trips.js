@@ -121,11 +121,61 @@ export function subscribeToTrips() {
     }, err => console.error('Firestore 오류:', err));
 }
 
-export function renderTripList() {
-  const grid  = document.getElementById('trip-grid');
-  const empty = document.getElementById('empty-state');
+function todayStr() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${dd}`;
+}
 
-  // 정렬 탭 active 표시
+function tripCardHTML(trip, { isManual, isPast }) {
+  const days = getDays(trip.startDate, trip.endDate);
+  const totalActs = days.reduce((n, date) => {
+    const day = trip.days.find(d => d.date === date);
+    return n + (day ? day.activities.length : 0);
+  }, 0);
+  const members = trip.memberIds?.length ?? 1;
+  const pastCls = isPast ? ' trip-card-past' : '';
+  const draggable = isManual && !isPast; // 지난 여행은 수동 정렬 대상에서 제외
+  return `
+    <div class="trip-card${draggable ? ' draggable' : ''}${pastCls}" data-id="${trip.id}"
+         style="--trip-color:${trip.color}" ${draggable ? 'draggable="true"' : ''}>
+      ${draggable ? '<div class="trip-drag-handle">⠿</div>' : ''}
+      <div class="trip-card-top">
+        <div class="trip-card-deco"></div>
+        <p class="trip-card-dest">${trip.destination}</p>
+        <h2 class="trip-card-name">${trip.title}</h2>
+      </div>
+      <div class="trip-card-bottom">
+        <span class="trip-meta">${fmtShort(trip.startDate)} – ${fmtShort(trip.endDate)} · ${days.length}일 · ${totalActs}개</span>
+        <span class="trip-members">👥 ${members}</span>
+      </div>
+    </div>`;
+}
+
+function bindTripCardEvents(grid) {
+  // 클릭 → 여행 열기
+  grid.querySelectorAll('.trip-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('.trip-drag-handle')) return;
+      openTrip(card.dataset.id);
+    });
+    card.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const trip = state.trips.find(t => t.id === card.dataset.id);
+      if (!isOwner(trip)) return;
+      showContextMenu(e.clientX, e.clientY, card.dataset.id);
+    });
+  });
+}
+
+export function renderTripList() {
+  const grid     = document.getElementById('trip-grid');
+  const pastGrid = document.getElementById('trip-grid-past');
+  const pastSec  = document.getElementById('trip-past-section');
+  const pastCnt  = document.getElementById('trip-past-count');
+  const empty    = document.getElementById('empty-state');
+
   document.querySelectorAll('.trip-sort-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.sort === state.tripSort);
   });
@@ -134,6 +184,9 @@ export function renderTripList() {
 
   if (trips.length === 0) {
     grid.innerHTML = '';
+    pastGrid.innerHTML = '';
+    pastSec.style.display = 'none';
+    pastGrid.style.display = 'none';
     empty.classList.remove('hidden');
     return;
   }
@@ -141,49 +194,33 @@ export function renderTripList() {
   empty.classList.add('hidden');
   const isManual = state.tripSort === 'manual';
 
-  grid.innerHTML = trips.map(trip => {
-    const days = getDays(trip.startDate, trip.endDate);
-    const totalActs = days.reduce((n, date) => {
-      const day = trip.days.find(d => d.date === date);
-      return n + (day ? day.activities.length : 0);
-    }, 0);
-    const members = trip.memberIds?.length ?? 1;
-    return `
-      <div class="trip-card${isManual ? ' draggable' : ''}" data-id="${trip.id}"
-           style="--trip-color:${trip.color}" ${isManual ? 'draggable="true"' : ''}>
-        ${isManual ? '<div class="trip-drag-handle">⠿</div>' : ''}
-        <div class="trip-card-top">
-          <div class="trip-card-deco"></div>
-          <p class="trip-card-dest">${trip.destination}</p>
-          <h2 class="trip-card-name">${trip.title}</h2>
-        </div>
-        <div class="trip-card-bottom">
-          <span class="trip-meta">${fmtShort(trip.startDate)} – ${fmtShort(trip.endDate)} · ${days.length}일 · ${totalActs}개</span>
-          <span class="trip-members">👥 ${members}</span>
-        </div>
-      </div>`;
-  }).join('');
+  // 오늘 이전에 끝난 여행을 분리 (종료일 < 오늘)
+  const today = todayStr();
+  const active = [];
+  const past   = [];
+  for (const t of trips) {
+    if (t.endDate && t.endDate < today) past.push(t);
+    else active.push(t);
+  }
 
-  // 클릭 → 여행 열기
-  grid.querySelectorAll('.trip-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.closest('.trip-drag-handle')) return;
-      openTrip(card.dataset.id);
-    });
-  });
+  // 지난 여행은 항상 최근 종료일순으로 표시
+  past.sort((a, b) => (b.endDate ?? '').localeCompare(a.endDate ?? ''));
 
-  // 우클릭 → 컨텍스트 메뉴
-  grid.querySelectorAll('.trip-card').forEach(card => {
-    card.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      const trip = state.trips.find(t => t.id === card.dataset.id);
-      if (!isOwner(trip)) return;
-      showContextMenu(e.clientX, e.clientY, card.dataset.id);
-    });
-  });
-
-  // 직접정렬 드래그
+  grid.innerHTML = active.map(trip => tripCardHTML(trip, { isManual, isPast: false })).join('');
+  bindTripCardEvents(grid);
   if (isManual) setupDragSort(grid);
+
+  if (past.length > 0) {
+    pastGrid.innerHTML = past.map(trip => tripCardHTML(trip, { isManual, isPast: true })).join('');
+    pastCnt.textContent = `(${past.length})`;
+    pastSec.style.display = '';
+    pastGrid.style.display = '';
+    bindTripCardEvents(pastGrid);
+  } else {
+    pastGrid.innerHTML = '';
+    pastSec.style.display = 'none';
+    pastGrid.style.display = 'none';
+  }
 }
 
 // ── 컨텍스트 메뉴 ─────────────────────────────────────────────────────────────
@@ -666,6 +703,64 @@ function promptKickMember(tripId, uid) {
       console.error(err);
       showToast('추방에 실패했습니다.');
     }
+  });
+}
+
+// ── 닉네임 수정 ───────────────────────────────────────────────────────────────
+export function openEditNicknameModal() {
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (!trip) return;
+  const uid = state.currentUser?.uid;
+  const current = trip.memberProfiles?.[uid]?.nickname || '';
+  document.getElementById('nickname-edit-input').value = current;
+  document.getElementById('err-nickname-edit').textContent = '';
+  openModal('modal-nickname');
+  setTimeout(() => {
+    const input = document.getElementById('nickname-edit-input');
+    input.focus();
+    input.select();
+  }, 50);
+}
+
+async function saveNickname() {
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (!trip) return;
+  const uid = state.currentUser.uid;
+  const input = document.getElementById('nickname-edit-input');
+  const errEl = document.getElementById('err-nickname-edit');
+  errEl.textContent = '';
+
+  const nickname = input.value.trim();
+  if (!nickname) {
+    errEl.textContent = '닉네임을 입력해주세요.';
+    input.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-nickname');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '저장 중…';
+
+  try {
+    await db.collection('trips').doc(trip.id).update({
+      [`memberProfiles.${uid}.nickname`]: nickname,
+    });
+    closeModal('modal-nickname');
+    showToast('닉네임이 변경됐습니다.');
+  } catch (err) {
+    console.error(err);
+    errEl.textContent = '저장에 실패했습니다.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+export function initNicknameModal() {
+  document.getElementById('btn-save-nickname').addEventListener('click', saveNickname);
+  document.getElementById('nickname-edit-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveNickname();
   });
 }
 

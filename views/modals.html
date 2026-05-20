@@ -180,6 +180,25 @@
   </div>
 </div>
 
+<!-- 닉네임 수정 모달 -->
+<div class="modal-overlay" id="modal-nickname">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>닉네임 수정</h2>
+      <button class="modal-close" data-close="modal-nickname">✕</button>
+    </div>
+    <div class="form-group">
+      <label for="nickname-edit-input">이 방에서 사용할 닉네임</label>
+      <input type="text" id="nickname-edit-input" placeholder="예: 길동" autocomplete="off" maxlength="20">
+      <span class="field-error" id="err-nickname-edit"></span>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" data-close="modal-nickname">취소</button>
+      <button type="button" class="btn-primary" id="btn-save-nickname">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- 참여자 관리 모달 (관리자 전용) -->
 <div class="modal-overlay" id="modal-members">
   <div class="modal">

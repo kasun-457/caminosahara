@@ -143,18 +143,20 @@ export function setDetailMode(mode) {
     select.style.display = '';
   }
 
-  // 보기 모드 푸터: 관리자 → 삭제+수정, 멤버 → 읽기 전용 라벨
+  // 보기 모드 푸터: 관리자 → 삭제+수정, 멤버 → 읽기 전용 라벨, 공통 → 닫기
   if (ro) {
     const showOwner  = owner;
     document.getElementById('dp-delete').style.display         = showOwner ? '' : 'none';
     document.getElementById('dp-edit').style.display           = showOwner ? '' : 'none';
     document.getElementById('dp-readonly-label').style.display = showOwner ? 'none' : '';
+    document.getElementById('dp-view-close').style.display     = '';
     document.getElementById('dp-cancel').style.display         = 'none';
     document.getElementById('dp-save').style.display           = 'none';
   } else {
     document.getElementById('dp-delete').style.display         = 'none';
     document.getElementById('dp-edit').style.display           = 'none';
     document.getElementById('dp-readonly-label').style.display = 'none';
+    document.getElementById('dp-view-close').style.display     = 'none';
     document.getElementById('dp-cancel').style.display         = '';
     document.getElementById('dp-save').style.display           = '';
   }
@@ -339,15 +341,17 @@ export function closeDetailPanel() {
   state.detailContext = { activityId: null, date: null };
 }
 
-export async function saveDetailPanel() {
+export async function saveDetailPanel(opts = {}) {
+  const silent = !!opts.silent;
   const { activityId, date } = state.detailContext;
-  if (!activityId) return;
+  if (!activityId) return false;
 
   const title = document.getElementById('dp-title').value.trim();
   if (!title) {
+    if (silent) return false; // 자동 저장: 제목 비어있으면 조용히 스킵
     document.getElementById('dp-title').classList.add('invalid');
     showToast('제목을 입력해주세요');
-    return;
+    return false;
   }
 
   const category = document.getElementById('dp-category').value;
@@ -357,11 +361,11 @@ export async function saveDetailPanel() {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
-  if (!dayData) return;
+  if (!dayData) return false;
   const act = dayData.activities.find(a => a.id === activityId);
-  if (!act) return;
+  if (!act) return false;
 
-  // 동적 필드에서 시간 추출 (모든 카테고리가 startTime/endTime 또는 교통의 departTime/arriveTime 사용)
+  // 동적 필드에서 시간 추출
   let time = category === '교통' ? details.departTime : details.startTime;
   let endTime = category === '교통' ? details.arriveTime : details.endTime;
   time = time || '';
@@ -370,15 +374,32 @@ export async function saveDetailPanel() {
   act.title = title; act.notes = notes; act.details = details;
 
   const btn = document.getElementById('dp-save');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
   try {
     await db.collection('trips').doc(state.currentTripId).update({ days: updatedDays });
-    showToast('저장됐습니다 ✓');
-    setDetailMode('view');  // 저장 성공 → 보기 모드로 복귀
+    if (!silent) {
+      showToast('저장됐습니다 ✓');
+      setDetailMode('view');
+    }
+    return true;
   } catch (err) {
     console.error(err);
-    showToast('저장에 실패했습니다.');
+    if (!silent) showToast('저장에 실패했습니다.');
+    return false;
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
+}
+
+// 바깥 클릭/ESC 등으로 패널을 닫을 때: 편집 모드면 조용히 저장 후 닫기
+export async function autoSaveAndClose() {
+  if (!state.detailContext?.activityId) {
+    closeDetailPanel();
+    return;
+  }
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (canEdit(trip) && getDetailMode() === 'edit') {
+    await saveDetailPanel({ silent: true });
+  }
+  closeDetailPanel();
 }
