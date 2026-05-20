@@ -765,13 +765,15 @@ h1 {
   gap: 1rem;
 }
 
-.activity-price {
+.activity-place {
   flex-shrink: 0;
-  font-family: 'DM Mono', monospace;
+  max-width: 45%;
   font-size: 0.82rem;
-  color: var(--accent-warm);
-  letter-spacing: 0.02em;
+  color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
 }
 
 /* ── 버튼 ─────────────────────────────────────────────────────────────── */

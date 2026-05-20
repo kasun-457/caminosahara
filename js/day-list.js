@@ -4,9 +4,7 @@ import { getDays, fmtDate, fmtTab } from './utils.js';
 import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
 import { addDayCity, removeDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
-import { canEdit, getTripCurrencies } from './trips.js';
-import { formatMoney, getCurrency } from './currencies.js';
-import { parsePrice } from './budget.js';
+import { canEdit } from './trips.js';
 
 let _scrollObserver = null;
 let _programmaticScroll = false;
@@ -20,19 +18,18 @@ function buildActivityHTML(act, date, editable) {
             <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
           </div>` : '';
 
-  // 예산 표시: priceCurrency 명시 → 해당 통화, 없으면 trip 기본 첫 통화로 fallback
-  let priceHTML = '';
-  const priceStr = act.details?.price;
-  if (priceStr) {
-    const trip = state.trips.find(t => t.id === state.currentTripId);
-    const fallback = getTripCurrencies(trip)[0];
-    const parsed = parsePrice(priceStr, act.details?.priceCurrency, fallback);
-    if (parsed && parsed.amount) {
-      const code = parsed.currency !== '기타' ? parsed.currency : fallback;
-      const label = getCurrency(code) ? formatMoney(parsed.amount, code) : `${parsed.amount.toLocaleString('ko-KR')}`;
-      priceHTML = `<span class="activity-price">💰 ${label}</span>`;
-    }
+  // 장소: 교통은 출발지→도착지, 나머지는 address
+  let placeText = '';
+  const d = act.details || {};
+  if (act.category === '교통') {
+    if (d.fromLocation && d.toLocation) placeText = `${d.fromLocation} → ${d.toLocation}`;
+    else placeText = d.fromLocation || d.toLocation || '';
+  } else {
+    placeText = d.address || '';
   }
+  const placeHTML = placeText
+    ? `<span class="activity-place">${placeText}</span>`
+    : '';
 
   return `
     <div class="activity-item" data-id="${act.id}">
@@ -44,7 +41,7 @@ function buildActivityHTML(act, date, editable) {
         </div>
         <div class="activity-title-row">
           <h3 class="activity-title">${act.title}</h3>
-          ${priceHTML}
+          ${placeHTML}
         </div>
       </div>
     </div>`;
