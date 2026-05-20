@@ -47,6 +47,17 @@
         </div>
       </div>
       <div class="form-group">
+        <label>통화 <span class="label-optional">선택 안 하면 원화(₩ KRW)가 기본</span></label>
+        <div class="currency-picker" id="trip-currency-picker">
+          <div class="currency-chips" id="trip-currency-chips"></div>
+          <div class="currency-search-wrap">
+            <input type="text" id="trip-currency-search" class="currency-search-input"
+                   placeholder="통화 검색 (예: USD, 달러, $)" autocomplete="off">
+            <div class="currency-dropdown" id="trip-currency-dropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
         <label>테마 색상</label>
         <div class="color-picker" id="color-picker">
           <button type="button" class="color-btn active" data-color="#c8f060" style="background:#c8f060" title="라임"></button>

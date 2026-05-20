@@ -1,8 +1,9 @@
 import { state } from './state.js';
-import { canEdit } from './trips.js';
+import { canEdit, getTripCurrencies } from './trips.js';
 import { db } from './firebase.js';
 import { CATEGORY_FIELDS, PLACE_AC_KEYS, CATEGORIES } from './constants.js';
 import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl, generateTimeOptions } from './utils.js';
+import { currencyShortLabel } from './currencies.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
 import {
   renderAttachmentsSection, uploadAttachment, deleteAttachment, ATTACHABLE_CATEGORIES,
@@ -239,6 +240,42 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`;
     }
+    // price 필드: trip 통화가 2개 이상이면 통화 셀렉트 동반
+    if (f.key === 'price') {
+      const trip = state.trips.find(t => t.id === state.currentTripId);
+      const codes = getTripCurrencies(trip);
+      const curSel = codes.includes(details.priceCurrency) ? details.priceCurrency : codes[0];
+      if (isViewMode) {
+        const display = val
+          ? `${escapeHtml(val)}${codes.length >= 2 ? ` <span class="dp-price-currency-view">(${escapeHtml(currencyShortLabel(curSel))})</span>` : ''}`
+          : '—';
+        return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div>${display}</div>
+      </div>
+    </div>`;
+      }
+      const curSelect = codes.length >= 2 ? `
+        <select class="dp-field-input price-currency-select" id="dpf-priceCurrency" data-key="priceCurrency">
+          ${codes.map(c => `<option value="${c}" ${c === curSel ? 'selected' : ''}>${currencyShortLabel(c)}</option>`).join('')}
+        </select>` : '';
+      return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div class="price-input-row">
+          <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
+                 placeholder="${escapeHtml(f.placeholder || '')}"
+                 value="${escapeHtml(val)}" autocomplete="off">
+          ${curSelect}
+        </div>
+      </div>
+    </div>`;
+    }
     return `
     <div class="dp-field-row">
       <span class="dp-field-icon">${f.icon}</span>
@@ -278,6 +315,8 @@ export function gatherDetailPanelFields() {
     const v = el.value.trim();
     if (v) details[el.dataset.key] = v;
   });
+  // price가 없으면 priceCurrency도 의미 없음
+  if (!details.price) delete details.priceCurrency;
   return details;
 }
 
