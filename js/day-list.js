@@ -4,7 +4,9 @@ import { getDays, fmtDate, fmtTab } from './utils.js';
 import { closeDetailPanel, openDetailPanel } from './detail-panel.js';
 import { openActivityModal, deleteActivity, confirmAction } from './activities.js';
 import { addDayCity, removeDayCity, openCityPopover, closeCityPopover } from './city-groups.js';
-import { canEdit } from './trips.js';
+import { canEdit, getTripCurrencies } from './trips.js';
+import { formatMoney, getCurrency } from './currencies.js';
+import { parsePrice } from './budget.js';
 
 let _scrollObserver = null;
 let _programmaticScroll = false;
@@ -17,6 +19,21 @@ function buildActivityHTML(act, date, editable) {
             <button class="icon-btn btn-edit-act" data-id="${act.id}" data-date="${date}" title="수정">✎</button>
             <button class="icon-btn btn-del-act" data-id="${act.id}" data-date="${date}" title="삭제">✕</button>
           </div>` : '';
+
+  // 예산 표시: priceCurrency 명시 → 해당 통화, 없으면 trip 기본 첫 통화로 fallback
+  let priceHTML = '';
+  const priceStr = act.details?.price;
+  if (priceStr) {
+    const trip = state.trips.find(t => t.id === state.currentTripId);
+    const fallback = getTripCurrencies(trip)[0];
+    const parsed = parsePrice(priceStr, act.details?.priceCurrency, fallback);
+    if (parsed && parsed.amount) {
+      const code = parsed.currency !== '기타' ? parsed.currency : fallback;
+      const label = getCurrency(code) ? formatMoney(parsed.amount, code) : `${parsed.amount.toLocaleString('ko-KR')}`;
+      priceHTML = `<span class="activity-price">💰 ${label}</span>`;
+    }
+  }
+
   return `
     <div class="activity-item" data-id="${act.id}">
       <div class="activity-time">${act.time || '—'}</div>
@@ -26,7 +43,7 @@ function buildActivityHTML(act, date, editable) {
           <span class="activity-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>${btns}
         </div>
         <h3 class="activity-title">${act.title}</h3>
-        ${act.notes ? `<p class="activity-notes">${act.notes}</p>` : ''}
+        ${priceHTML}
       </div>
     </div>`;
 }

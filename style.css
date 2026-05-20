@@ -758,6 +758,15 @@ h1 {
   white-space: pre-wrap;
 }
 
+.activity-price {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--accent-warm);
+  letter-spacing: 0.02em;
+}
+
 /* ── 버튼 ─────────────────────────────────────────────────────────────── */
 .btn-primary {
   font-family: 'DM Mono', monospace;
