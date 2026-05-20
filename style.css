@@ -3519,7 +3519,7 @@ textarea { resize: vertical; min-height: 80px; }
   font-family: 'DM Mono', monospace;
   font-size: 0.82rem;
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .budget-item-list {
@@ -3559,7 +3559,7 @@ textarea { resize: vertical; min-height: 80px; }
 .budget-item-amount {
   font-family: 'DM Mono', monospace;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 400;
   text-align: right;
   color: var(--text);
   white-space: nowrap;
