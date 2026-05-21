@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
+<<<<<<< HEAD
       "Bash(ls -la \"D:/KakaoTalk_20260521_172340942.mp4\" 2>&1 | head -5)"
+=======
+      "Bash(ls -la \"C:\\\\강성현\\\\가대\\\\산티아고\\\\sahara-website\\\\\")"
+>>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a
     ]
   }
 }

@@ -1,7 +1,8 @@
 import { state } from './state.js';
 import { auth, googleProvider, db } from './firebase.js';
 import { showToast, generateShareCode } from './utils.js';
-import { subscribeToTrips, renderTripList, applySortPref, beginJoinFlow } from './trips.js';
+import { subscribeToTrips, renderTripList, applySortPref } from './trips.js';
+import { beginJoinFlow } from './trip-modals.js';
 import { goBack } from './activities.js';
 
 export function setAuthMode(mode) {
@@ -15,7 +16,7 @@ export function setAuthMode(mode) {
   document.getElementById('auth-error').textContent = '';
 }
 
-export function authErrorMessage(err) {
+function authErrorMessage(err) {
   const code = err?.code || '';
   const map = {
     'auth/invalid-email': '올바른 이메일 형식이 아닙니다.',
@@ -91,19 +92,19 @@ export async function signOutUser() {
   await auth.signOut();
 }
 
-export function showLoginScreen() {
+function showLoginScreen() {
   document.getElementById('login-overlay').classList.add('active');
   document.getElementById('user-info').style.display = 'none';
   setAuthMode('login');
   document.getElementById('form-auth').reset();
 }
 
-export function showApp() {
+function showApp() {
   document.getElementById('login-overlay').classList.remove('active');
   document.getElementById('user-info').style.display = 'flex';
 }
 
-export function updateUserUI(user) {
+function updateUserUI(user) {
   const btn     = document.getElementById('user-btn');
   const avatar  = document.getElementById('user-avatar');
   const initial = document.getElementById('user-initial');
@@ -179,7 +180,7 @@ export async function submitDeleteAccount(e) {
   }
 }
 
-export async function migrateLegacyData(user) {
+async function migrateLegacyData(user) {
   const raw = localStorage.getItem('trips');
   if (!raw) return;
   let legacyTrips;
@@ -209,7 +210,7 @@ export async function migrateLegacyData(user) {
   showToast(`${legacyTrips.length}개 여행을 클라우드로 이전했습니다 ✓`);
 }
 
-export async function handleJoinFromUrl() {
+async function handleJoinFromUrl() {
   const params   = new URLSearchParams(window.location.search);
   const tripId   = params.get('tripId');
   const joinCode = params.get('join');

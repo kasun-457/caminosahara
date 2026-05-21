@@ -7,18 +7,20 @@
         <p class="trip-dates-label" id="trip-dates-label"></p>
       </div>
       <div class="trip-hero-actions">
-        <button class="btn-outline btn-sm" id="btn-share-trip">🔗 초대</button>
         <button class="btn-outline btn-sm" id="btn-members">👥 참여자</button>
-        <button class="btn-outline btn-sm" id="btn-budget">💰 가계부</button>
-        <button class="btn-outline btn-sm" id="btn-edit-nickname">✎ 닉네임</button>
-        <button class="btn-outline btn-sm" id="btn-edit-trip">수정</button>
-        <button class="btn-danger btn-sm" id="btn-delete-trip">삭제</button>
-        <button class="btn-outline btn-sm" id="btn-leave-trip">여행 나가기</button>
+        <button class="btn-outline btn-sm" id="btn-settings">⚙ 설정</button>
       </div>
     </div>
 
+    <!-- 메인 뷰 전환 탭 (일정 / 지도 / 가계부) -->
+    <div class="main-view-tabs" id="main-view-tabs">
+      <button type="button" class="main-view-tab active" data-main-view="schedule">📅 일정</button>
+      <button type="button" class="main-view-tab" data-main-view="map">🗺 지도</button>
+      <button type="button" class="main-view-tab" data-main-view="budget">💰 가계부</button>
+    </div>
+
     <!-- sticky: 뷰 전환 툴바 + 날짜 탭 -->
-    <div class="trip-sticky-bar">
+    <div class="trip-sticky-bar" id="trip-sticky-bar">
       <div class="cal-toolbar" id="cal-toolbar">
         <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
           <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
@@ -45,5 +47,65 @@
 
     <!-- 캘린더 그리드 뷰 -->
     <div id="cal-view" style="display:none"></div>
+
+    <!-- 지도 뷰 -->
+    <div id="map-view" class="map-view" style="display:none">
+      <div class="map-view-grid">
+        <div class="map-pane">
+          <div id="map-canvas" class="map-canvas"></div>
+          <div id="map-legend" class="map-legend"></div>
+        </div>
+        <aside id="map-side-pane" class="map-side-pane"></aside>
+      </div>
+    </div>
+
+    <!-- 가계부 인라인 뷰 -->
+    <div id="budget-view" class="budget-view" style="display:none">
+      <div id="budget-body-inline" class="budget-body"></div>
+    </div>
+
+    <!-- 맨 위로 버튼 (일정 탭에서 일정 스크롤 시 노출) -->
+    <button id="btn-scroll-top" class="scroll-top-fab" type="button" aria-label="맨 위로">
+      <span class="scroll-top-icon">↑</span>
+    </button>
+
+    <!-- 채팅 토글 FAB (우측 하단 고정) -->
+    <button id="btn-chat-fab" class="chat-fab" type="button" aria-label="채팅 열기/닫기">
+      <span class="chat-fab-icon">💬</span>
+    </button>
+
+    <!-- 채팅 사이드 패널 (화면 분할) -->
+    <aside id="chat-panel" class="chat-panel" aria-hidden="true">
+      <div class="chat-panel-header">
+        <h3>💬 <span id="chat-trip-title"></span></h3>
+        <button class="chat-panel-close" id="btn-chat-close" aria-label="채팅 닫기">✕</button>
+      </div>
+      <!-- 공지 (우클릭 → 공지로 등록) -->
+      <div id="chat-notice" class="chat-notice" style="display:none">
+        <div class="chat-notice-head">
+          <span class="chat-notice-icon">📌</span>
+          <span class="chat-notice-sender" id="chat-notice-sender"></span>
+          <button type="button" class="chat-notice-toggle" id="chat-notice-toggle" aria-label="접기/펴기">▾</button>
+          <button type="button" class="chat-notice-unpin" id="chat-notice-unpin" aria-label="공지 해제" title="공지 해제">✕</button>
+        </div>
+        <div class="chat-notice-body" id="chat-notice-body"></div>
+      </div>
+
+      <div id="chat-messages" class="chat-messages"></div>
+
+      <!-- 첨부 파일 미리보기 -->
+      <div id="chat-attachments-preview" class="chat-attachments-preview" style="display:none">
+        <div id="chat-attachments-list" class="chat-attachments-list"></div>
+      </div>
+
+      <div class="chat-input-row">
+        <button class="chat-attach-btn" id="btn-chat-attach" title="파일 첨부">📎</button>
+        <input type="file" id="chat-file-input" multiple style="display:none">
+        <textarea id="chat-input" class="chat-input"
+                  placeholder="메시지를 입력하세요"
+                  rows="1" maxlength="1000"></textarea>
+        <button class="btn-primary btn-sm" id="btn-chat-send">전송</button>
+      </div>
+    </aside>
   </section>
 </main>

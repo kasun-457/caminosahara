@@ -7,7 +7,7 @@ import { getCurrency, formatMoney, currencyShortLabel } from './currencies.js';
 // ── 가격 문자열 파싱 ──────────────────────────────────────────────────────────
 // "15유로", "15-30유로", "65,000원", "$45.50/박" 등에서 첫 숫자와 통화 코드 추출
 // explicitCode가 주어지면 통화 자동감지를 건너뛴다.
-export function parsePrice(str, explicitCode, fallbackCode) {
+function parsePrice(str, explicitCode, fallbackCode) {
   if (!str) return null;
   const s = String(str).trim();
   // 첫 번째 숫자(쉼표·소수점 포함)
@@ -102,12 +102,19 @@ function sumByCategory(items) {
 export function openBudgetModal() {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   if (!trip) return;
-  renderBudgetModal(trip);
+  renderBudget(trip, document.getElementById('budget-body'));
   openModal('modal-budget');
 }
 
-function renderBudgetModal(trip) {
-  const body = document.getElementById('budget-body');
+// 인라인 뷰(가계부 탭)에서 호출
+export function renderBudgetInline() {
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (!trip) return;
+  renderBudget(trip, document.getElementById('budget-body-inline'));
+}
+
+function renderBudget(trip, body) {
+  if (!body) return;
   const items = collectExpenses(trip);
 
   if (items.length === 0) {

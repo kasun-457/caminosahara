@@ -286,6 +286,7 @@ export function renderDayTabs(trip) {
   }));
 }
 
+<<<<<<< HEAD
 // 호환성 유지용 (calendar.js 등에서 호출하는 경우)
 export function renderActivities(trip, date) {
   renderDayTabs(trip);
@@ -295,3 +296,5 @@ export function renderActivities(trip, date) {
 export function resetDayListFirstRender() {
   _firstRender = true;
 }
+=======
+>>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a

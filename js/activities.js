@@ -4,6 +4,7 @@ import { uid, showToast, openModal, closeModal } from './utils.js';
 import { renderActivityFormFields, gatherActivityDetails } from './activity-fields.js';
 import { closeDetailPanel } from './detail-panel.js';
 import { purgeActivityAttachments } from './attachments.js';
+import { closeChatPanel } from './chat.js';
 
 export function openActivityModal(activityId, date, presetTime) {
   state.editingActivityId = activityId;
@@ -134,6 +135,8 @@ export function confirmAction(message, callback) {
 
 export function goBack() {
   closeDetailPanel();
+  closeChatPanel(); // 구독 해제 + DOM 클래스 정리 모두 포함
+
   state.currentTripId = null;
   window.history.replaceState(null, '', location.pathname + location.search);
   document.getElementById('nav-breadcrumb').textContent = '';

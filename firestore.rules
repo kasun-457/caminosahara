@@ -86,6 +86,37 @@ service cloud.firestore {
       // 삭제: 관리자만
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.ownerId;
+
+      // ── /trips/{tripId}/messages/{msgId} ────────────────────────────
+      //  채팅 메시지. 읽기/쓰기 모두 trip의 멤버만 가능.
+      match /messages/{msgId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/trips/$(tripId)).data.memberIds;
+
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/trips/$(tripId)).data.memberIds
+          && request.auth.uid == request.resource.data.senderUid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 1000
+          && (
+            request.resource.data.text.size() > 0
+            || (request.resource.data.attachments is list && request.resource.data.attachments.size() > 0)
+          )
+          && request.resource.data.createdAt == request.time;
+
+        // 본인 메시지 수정: senderUid/createdAt 변경 불가, text 길이 제한
+        allow update: if request.auth != null
+          && request.auth.uid == resource.data.senderUid
+          && request.resource.data.senderUid == resource.data.senderUid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+
+        // 본인 메시지 삭제만 허용
+        allow delete: if request.auth != null
+          && request.auth.uid == resource.data.senderUid;
+      }
     }
   }
 }
