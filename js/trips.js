@@ -42,13 +42,6 @@ function saveManualOrder(ids) {
   localStorage.setItem(`tripOrder_${state.currentUser?.uid}`, JSON.stringify(ids));
 }
 
-// ── 정렬 기준 저장/불러오기 (계정별) ──────────────────────────────────────────
-function loadSortPref() {
-  return localStorage.getItem(`tripSort_${state.currentUser?.uid}`) || 'startDate';
-}
-function saveSortPref(sort) {
-  localStorage.setItem(`tripSort_${state.currentUser?.uid}`, sort);
-}
 const SORT_LABELS = {
   recent:    '최신 등록순',
   startDate: '여행 날짜순',
