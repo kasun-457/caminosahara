@@ -95,13 +95,27 @@ export function applySortPref() {
 export function subscribeToTrips() {
   if (state.unsubscribeTrips) state.unsubscribeTrips();
   let _firstLoad = true;
+  let _lastTripsHash = '';
+  let _lastCurrentTripHash = '';
   state.unsubscribeTrips = db.collection('trips')
     .where('memberIds', 'array-contains', state.currentUser.uid)
     .onSnapshot(snapshot => {
+      // 로컬에서 발생한 보류 중 쓰기로 인한 스냅샷은 무시 (서버 확정본만 처리)
+      if (snapshot.metadata.hasPendingWrites) return;
+
       state.trips = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-      renderTripList();
+
+      // 목록이 실제로 바뀌었을 때만 렌더
+      const tripsHash = JSON.stringify(state.trips.map(t => ({
+        id: t.id, name: t.name, startDate: t.startDate, endDate: t.endDate,
+        memberIds: t.memberIds, role: t.role,
+      })));
+      if (tripsHash !== _lastTripsHash) {
+        _lastTripsHash = tripsHash;
+        renderTripList();
+      }
 
       // 첫 로드 시 해시에서 여행 ID 복원
       if (_firstLoad) {
@@ -117,8 +131,12 @@ export function subscribeToTrips() {
       if (state.currentTripId) {
         const trip = state.trips.find(t => t.id === state.currentTripId);
         if (trip) {
-          if (state.calView === 'list') renderDayTabs(trip);
-          else renderGridView(trip);
+          const currentHash = JSON.stringify({ days: trip.days, name: trip.name, startDate: trip.startDate, endDate: trip.endDate });
+          if (currentHash !== _lastCurrentTripHash) {
+            _lastCurrentTripHash = currentHash;
+            if (state.calView === 'list') renderDayTabs(trip);
+            else renderGridView(trip);
+          }
         } else {
           goBack();
         }

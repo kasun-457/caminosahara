@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"D:/KakaoTalk_20260521_172340942.mp4\" 2>&1 | head -5)"
+    ]
+  }
+}
