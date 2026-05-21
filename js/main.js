@@ -3,13 +3,15 @@ import { closeModal } from './utils.js';
 import { DatePicker } from './date-picker.js';
 import { attachTimePickers } from './time-picker.js';
 import {
-  setAuthMode, signInWithGoogle, signInWithApple, submitAuthForm, signOutUser,
+  setAuthMode, signInWithGoogle, submitAuthForm, signOutUser,
   openDeleteAccountModal, submitDeleteAccount,
   toggleUserMenu, closeUserMenu, initAuthStateListener,
 } from './auth.js';
 import {
-  openTripModal, saveTripForm, copyShareLink,
-  renderTripList, initContextMenu, initSortDropdown,
+  openTripModal, saveTripForm,
+  renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
+  leaveTrip, openInviteModal, initInviteModal, initJoinRoomModal, openMembersModal,
+  openEditNicknameModal, initNicknameModal, initTripCurrencyPicker,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -18,10 +20,11 @@ import {
 import {
   closeDetailPanel, saveDetailPanel,
   renderDetailPanelFields, updateDetailPanelMap,
-  setDetailMode, openDetailPanel,
+  setDetailMode, openDetailPanel, autoSaveAndClose,
 } from './detail-panel.js';
 import { renderActivityFormFields } from './activity-fields.js';
 import { switchCalView, calNavigate } from './calendar.js';
+import { openBudgetModal } from './budget.js';
 
 // 이전 버전 localStorage 잔여 데이터 정리
 localStorage.removeItem('trips');
@@ -65,7 +68,6 @@ async function init() {
 
   // Auth
   document.getElementById('btn-google-login').addEventListener('click', signInWithGoogle);
-  document.getElementById('btn-apple-login').addEventListener('click', signInWithApple);
   document.getElementById('form-auth').addEventListener('submit', submitAuthForm);
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => setAuthMode(tab.dataset.tab));
@@ -86,6 +88,7 @@ async function init() {
 
   // 정렬 드롭다운
   initSortDropdown();
+  initTripModalTabs();
 
   // 우클릭 컨텍스트 메뉴
   initContextMenu();
@@ -95,11 +98,21 @@ async function init() {
   document.getElementById('btn-new-trip-empty').addEventListener('click', () => openTripModal());
   document.getElementById('nav-back').addEventListener('click', goBack);
   document.getElementById('nav-logo').addEventListener('click', () => { if (state.currentTripId) goBack(); });
-  document.getElementById('btn-share-trip').addEventListener('click', () => copyShareLink(state.currentTripId));
+  document.getElementById('btn-share-trip').addEventListener('click', () => openInviteModal(state.currentTripId));
+  document.getElementById('btn-members').addEventListener('click', () => openMembersModal(state.currentTripId));
+  document.getElementById('btn-edit-nickname').addEventListener('click', () => openEditNicknameModal());
+  document.getElementById('btn-budget').addEventListener('click', () => openBudgetModal());
   document.getElementById('btn-edit-trip').addEventListener('click', () => openTripModal(state.currentTripId));
   document.getElementById('btn-delete-trip').addEventListener('click', () => {
     confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(state.currentTripId));
   });
+  document.getElementById('btn-leave-trip').addEventListener('click', () => leaveTrip(state.currentTripId));
+
+  // 초대 / 방 참여 / 닉네임 모달 초기화
+  initInviteModal();
+  initJoinRoomModal();
+  initNicknameModal();
+  initTripCurrencyPicker();
 
   // 폼
   document.getElementById('form-trip').addEventListener('submit', saveTripForm);
@@ -117,6 +130,7 @@ async function init() {
 
   // 상세 패널
   document.getElementById('dp-close').addEventListener('click', closeDetailPanel);
+  document.getElementById('dp-view-close').addEventListener('click', closeDetailPanel);
   document.getElementById('dp-save').addEventListener('click', saveDetailPanel);
   document.getElementById('dp-edit').addEventListener('click', () => setDetailMode('edit'));
   document.getElementById('dp-cancel').addEventListener('click', () => {
@@ -139,7 +153,7 @@ async function init() {
     });
   });
   document.getElementById('detail-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('detail-overlay')) closeDetailPanel();
+    if (e.target === document.getElementById('detail-overlay')) autoSaveAndClose();
   });
 
   // 확인 모달
@@ -176,9 +190,11 @@ async function init() {
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     if (document.getElementById('detail-overlay').classList.contains('active')) {
-      closeDetailPanel(); return;
+      autoSaveAndClose(); return;
     }
-    ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account'].forEach(id => {
+    ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account',
+     'modal-invite', 'modal-join-room', 'modal-members', 'modal-nickname',
+     'modal-budget'].forEach(id => {
       if (document.getElementById(id).classList.contains('active')) closeModal(id);
     });
   });

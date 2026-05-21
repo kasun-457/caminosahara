@@ -1,7 +1,9 @@
 import { state } from './state.js';
+import { canEdit, getTripCurrencies } from './trips.js';
 import { db } from './firebase.js';
-import { CATEGORY_FIELDS, PLACE_AC_KEYS } from './constants.js';
-import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl } from './utils.js';
+import { CATEGORY_FIELDS, PLACE_AC_KEYS, CATEGORIES } from './constants.js';
+import { escapeHtml, showToast, mapEmbedUrl, mapSearchUrl, mapDirectionsUrl, generateTimeOptions } from './utils.js';
+import { currencyShortLabel } from './currencies.js';
 import { PlaceAutocomplete } from './place-autocomplete.js';
 import {
   renderAttachmentsSection, uploadAttachment, deleteAttachment, ATTACHABLE_CATEGORIES,
@@ -115,14 +117,50 @@ function renderAndBindAttachments() {
 export function setDetailMode(mode) {
   const panel = document.getElementById('detail-panel');
   if (!panel) return;
-  panel.dataset.mode = mode;
-  const ro = mode === 'view';
+
+  const trip    = state.trips.find(t => t.id === state.currentTripId);
+  const owner   = canEdit(trip);
+  // 뷰어는 수정 모드 진입 자체를 막음
+  const safeMode = (!owner && mode === 'edit') ? 'view' : mode;
+  panel.dataset.mode = safeMode;
+  const ro = safeMode === 'view';
 
   document.getElementById('dp-title').readOnly    = ro;
   document.getElementById('dp-notes').readOnly    = ro;
-  document.getElementById('dp-time').readOnly     = ro;
-  document.getElementById('dp-end-time').readOnly = ro;
   document.getElementById('dp-category').disabled = ro;
+
+  // 카테고리 배지: 보기 모드 → 컬러 배지 표시 / 수정 모드 → select 표시
+  const catVal   = document.getElementById('dp-category').value;
+  const catMeta  = CATEGORIES[catVal] || CATEGORIES['기타'];
+  const badge    = document.getElementById('dp-cat-badge');
+  const select   = document.getElementById('dp-category');
+  if (ro) {
+    badge.textContent = `${catMeta.icon} ${catVal}`;
+    badge.style.setProperty('--cat-color', catMeta.color);
+    badge.style.display = '';
+    select.style.display = 'none';
+  } else {
+    badge.style.display = 'none';
+    select.style.display = '';
+  }
+
+  // 보기 모드 푸터: 관리자 → 삭제+수정, 멤버 → 읽기 전용 라벨, 공통 → 닫기
+  if (ro) {
+    const showOwner  = owner;
+    document.getElementById('dp-delete').style.display         = showOwner ? '' : 'none';
+    document.getElementById('dp-edit').style.display           = showOwner ? '' : 'none';
+    document.getElementById('dp-readonly-label').style.display = showOwner ? 'none' : '';
+    document.getElementById('dp-view-close').style.display     = '';
+    document.getElementById('dp-cancel').style.display         = 'none';
+    document.getElementById('dp-save').style.display           = 'none';
+  } else {
+    document.getElementById('dp-delete').style.display         = 'none';
+    document.getElementById('dp-edit').style.display           = 'none';
+    document.getElementById('dp-readonly-label').style.display = 'none';
+    document.getElementById('dp-view-close').style.display     = 'none';
+    document.getElementById('dp-cancel').style.display         = '';
+    document.getElementById('dp-save').style.display           = '';
+  }
 
   // 동적 필드는 모드에 따라 input ↔ 하이퍼링크 형태가 달라지므로 재렌더
   if (state.detailContext?.activityId) {
@@ -177,6 +215,67 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`;
     }
+    // 시간 필드: 드롭다운으로 렌더링
+    if (f.type === 'time') {
+      if (isViewMode) {
+        return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div>${val || '—'}</div>
+      </div>
+    </div>`;
+      }
+      const times = generateTimeOptions();
+      return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <select class="dp-field-input time-select" id="dpf-${f.key}" data-key="${f.key}">
+          <option value="">선택 안함</option>
+          ${times.map(t => `<option value="${t}" ${t === val ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+    }
+    // price 필드: trip 통화가 2개 이상이면 통화 셀렉트 동반
+    if (f.key === 'price') {
+      const trip = state.trips.find(t => t.id === state.currentTripId);
+      const codes = getTripCurrencies(trip);
+      const curSel = codes.includes(details.priceCurrency) ? details.priceCurrency : codes[0];
+      if (isViewMode) {
+        const display = val
+          ? `${escapeHtml(val)}${codes.length >= 2 ? ` <span class="dp-price-currency-view">(${escapeHtml(currencyShortLabel(curSel))})</span>` : ''}`
+          : '—';
+        return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div>${display}</div>
+      </div>
+    </div>`;
+      }
+      const curSelect = codes.length >= 2 ? `
+        <select class="dp-field-input price-currency-select" id="dpf-priceCurrency" data-key="priceCurrency">
+          ${codes.map(c => `<option value="${c}" ${c === curSel ? 'selected' : ''}>${currencyShortLabel(c)}</option>`).join('')}
+        </select>` : '';
+      return `
+    <div class="dp-field-row">
+      <span class="dp-field-icon">${f.icon}</span>
+      <div class="dp-field-content">
+        <span class="dp-field-label">${f.label}</span>
+        <div class="price-input-row">
+          <input type="text" class="dp-field-input" id="dpf-${f.key}" data-key="${f.key}"
+                 placeholder="${escapeHtml(f.placeholder || '')}"
+                 value="${escapeHtml(val)}" autocomplete="off">
+          ${curSelect}
+        </div>
+      </div>
+    </div>`;
+    }
     return `
     <div class="dp-field-row">
       <span class="dp-field-icon">${f.icon}</span>
@@ -190,7 +289,7 @@ export function renderDetailPanelFields(category, details = {}) {
       </div>
     </div>`;
   }).join('');
-  container.querySelectorAll('.dp-field-input').forEach(inp => {
+  container.querySelectorAll('.dp-field-input:not(.time-select)').forEach(inp => {
     if (isViewMode) inp.readOnly = true;
     inp.addEventListener('input', () => {
       updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
@@ -202,6 +301,12 @@ export function renderDetailPanelFields(category, details = {}) {
       state.dpAutocompletes.push(ac);
     }
   });
+  // 시간 선택 이벤트
+  container.querySelectorAll('.dp-field-input.time-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      updateDetailPanelMap(document.getElementById('dp-category').value, gatherDetailPanelFields());
+    });
+  });
 }
 
 export function gatherDetailPanelFields() {
@@ -210,6 +315,8 @@ export function gatherDetailPanelFields() {
     const v = el.value.trim();
     if (v) details[el.dataset.key] = v;
   });
+  // price가 없으면 priceCurrency도 의미 없음
+  if (!details.price) delete details.priceCurrency;
   return details;
 }
 
@@ -248,8 +355,6 @@ export function openDetailPanel(activityId, date, mode = 'view') {
   setDetailMode(mode);
 
   document.getElementById('dp-category').value = act.category;
-  document.getElementById('dp-time').value = act.time || '';
-  document.getElementById('dp-end-time').value = act.endTime || '';
   document.getElementById('dp-title').value = act.title;
   document.getElementById('dp-title').classList.remove('invalid');
   document.getElementById('dp-notes').value = act.notes || '';
@@ -275,18 +380,19 @@ export function closeDetailPanel() {
   state.detailContext = { activityId: null, date: null };
 }
 
-export async function saveDetailPanel() {
+export async function saveDetailPanel(opts = {}) {
+  const silent = !!opts.silent;
   const { activityId, date } = state.detailContext;
-  if (!activityId) return;
+  if (!activityId) return false;
 
   const title = document.getElementById('dp-title').value.trim();
   if (!title) {
+    if (silent) return false; // 자동 저장: 제목 비어있으면 조용히 스킵
     document.getElementById('dp-title').classList.add('invalid');
     showToast('제목을 입력해주세요');
-    return;
+    return false;
   }
 
-  const time = document.getElementById('dp-time').value;
   const category = document.getElementById('dp-category').value;
   const notes = document.getElementById('dp-notes').value.trim();
   const details = gatherDetailPanelFields();
@@ -294,24 +400,45 @@ export async function saveDetailPanel() {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   const updatedDays = structuredClone(trip.days);
   const dayData = updatedDays.find(d => d.date === date);
-  if (!dayData) return;
+  if (!dayData) return false;
   const act = dayData.activities.find(a => a.id === activityId);
-  if (!act) return;
+  if (!act) return false;
 
-  const endTime = document.getElementById('dp-end-time').value || null;
+  // 동적 필드에서 시간 추출
+  let time = category === '교통' ? details.departTime : details.startTime;
+  let endTime = category === '교통' ? details.arriveTime : details.endTime;
+  time = time || '';
+  endTime = endTime || null;
   act.time = time; act.endTime = endTime; act.category = category;
   act.title = title; act.notes = notes; act.details = details;
 
   const btn = document.getElementById('dp-save');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
   try {
     await db.collection('trips').doc(state.currentTripId).update({ days: updatedDays });
-    showToast('저장됐습니다 ✓');
-    setDetailMode('view');  // 저장 성공 → 보기 모드로 복귀
+    if (!silent) {
+      showToast('저장됐습니다 ✓');
+      setDetailMode('view');
+    }
+    return true;
   } catch (err) {
     console.error(err);
-    showToast('저장에 실패했습니다.');
+    if (!silent) showToast('저장에 실패했습니다.');
+    return false;
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
+}
+
+// 바깥 클릭/ESC 등으로 패널을 닫을 때: 편집 모드면 조용히 저장 후 닫기
+export async function autoSaveAndClose() {
+  if (!state.detailContext?.activityId) {
+    closeDetailPanel();
+    return;
+  }
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (canEdit(trip) && getDetailMode() === 'edit') {
+    await saveDetailPanel({ silent: true });
+  }
+  closeDetailPanel();
 }

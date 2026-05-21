@@ -20,8 +20,9 @@ export function openActivityModal(activityId, date, presetTime) {
     const act = dayData?.activities.find(a => a.id === activityId);
     if (act) {
       document.getElementById('modal-activity-heading').textContent = '일정 수정';
-      document.getElementById('activity-time').value = act.time || '';
       document.getElementById('activity-category').value = act.category;
+      document.getElementById('activity-time').value = act.time || '';
+      document.getElementById('activity-end-time').value = act.endTime || '';
       document.getElementById('activity-title').value = act.title;
       document.getElementById('activity-notes').value = act.notes || '';
       category = act.category;
@@ -47,11 +48,25 @@ export async function saveActivityForm(e) {
     return;
   }
 
-  const time = document.getElementById('activity-time').value;
   const category = document.getElementById('activity-category').value;
-  const notes = document.getElementById('activity-notes').value.trim();
-  const details = gatherActivityDetails(category);
-  const date = state.editingActivityDate;
+  const notes    = document.getElementById('activity-notes').value.trim();
+  const details  = gatherActivityDetails(category);
+  const date     = state.editingActivityDate;
+
+  // 동적 필드에서 시간 추출 (모든 카테고리가 startTime/endTime 또는 교통의 departTime/arriveTime 사용)
+  let time = category === '교통' ? details.departTime : details.startTime;
+  let endTime = category === '교통' ? details.arriveTime : details.endTime;
+  time = time || '';
+  endTime = endTime || '';
+
+  // 시작 시간만 있고 종료 시간 없으면 → 1시간 후 기본값
+  if (time && !endTime) {
+    const [h, m] = time.split(':').map(Number);
+    const end = h * 60 + m + 60;
+    endTime = `${String(Math.floor(end / 60) % 24).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+  }
+  // 시작 시간 없으면 종료 시간도 제거
+  if (!time) endTime = '';
 
   const trip = state.trips.find(t => t.id === state.currentTripId);
   const updatedDays = structuredClone(trip.days);
@@ -60,9 +75,9 @@ export async function saveActivityForm(e) {
 
   if (state.editingActivityId) {
     const act = dayData.activities.find(a => a.id === state.editingActivityId);
-    if (act) { act.time = time; act.category = category; act.title = title; act.notes = notes; act.details = details; }
+    if (act) { act.time = time; act.endTime = endTime; act.category = category; act.title = title; act.notes = notes; act.details = details; }
   } else {
-    dayData.activities.push({ id: uid(), time, category, title, notes, details });
+    dayData.activities.push({ id: uid(), time, endTime, category, title, notes, details });
   }
 
   try {
@@ -120,6 +135,7 @@ export function confirmAction(message, callback) {
 export function goBack() {
   closeDetailPanel();
   state.currentTripId = null;
+  window.history.replaceState(null, '', location.pathname + location.search);
   document.getElementById('nav-breadcrumb').textContent = '';
   document.getElementById('nav-back').style.display = 'none';
   document.getElementById('view-trip').classList.remove('active');

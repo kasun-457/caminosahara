@@ -5,6 +5,14 @@
       <h2 id="modal-trip-heading">새 여행 추가</h2>
       <button class="modal-close" data-close="modal-trip">✕</button>
     </div>
+
+    <!-- 새 여행 / 초대 링크 탭 (수정 모드에선 숨김) -->
+    <div class="trip-modal-tabs" id="trip-modal-tabs">
+      <button type="button" class="trip-modal-tab active" data-trip-tab="new">새 여행</button>
+      <button type="button" class="trip-modal-tab" data-trip-tab="join">초대 링크로 참여</button>
+    </div>
+
+    <!-- 새 여행 폼 -->
     <form id="form-trip" novalidate>
       <div class="form-group">
         <label for="trip-name">여행 이름</label>
@@ -39,6 +47,17 @@
         </div>
       </div>
       <div class="form-group">
+        <label>통화 <span class="label-optional">선택 안 하면 원화(₩ KRW)가 기본</span></label>
+        <div class="currency-picker" id="trip-currency-picker">
+          <div class="currency-chips" id="trip-currency-chips"></div>
+          <div class="currency-search-wrap">
+            <input type="text" id="trip-currency-search" class="currency-search-input"
+                   placeholder="통화 검색 (예: USD, 달러, $)" autocomplete="off">
+            <div class="currency-dropdown" id="trip-currency-dropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
         <label>테마 색상</label>
         <div class="color-picker" id="color-picker">
           <button type="button" class="color-btn active" data-color="#c8f060" style="background:#c8f060" title="라임"></button>
@@ -54,6 +73,19 @@
         <button type="submit" class="btn-primary">저장</button>
       </div>
     </form>
+
+    <!-- 초대 링크 참여 패널 -->
+    <div id="trip-join-panel" class="trip-join-panel hidden">
+      <div class="form-group">
+        <label for="join-link-input">초대 링크</label>
+        <input type="text" id="join-link-input" placeholder="초대 링크를 붙여넣으세요" autocomplete="off">
+        <span class="field-error" id="err-join-link"></span>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" data-close="modal-trip">취소</button>
+        <button type="button" class="btn-primary" id="btn-join-trip">참여하기</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -65,22 +97,17 @@
       <button class="modal-close" data-close="modal-activity">✕</button>
     </div>
     <form id="form-activity" novalidate>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="activity-time">시간 (선택)</label>
-          <input type="time" id="activity-time">
-        </div>
-        <div class="form-group">
-          <label for="activity-category">카테고리</label>
-          <select id="activity-category">
-            <option value="관광">🏛️ 관광</option>
-            <option value="식사">🍽️ 식사</option>
-            <option value="교통">🚌 교통</option>
-            <option value="숙박">🏨 숙박</option>
-            <option value="쇼핑">🛍️ 쇼핑</option>
-            <option value="기타">📌 기타</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label for="activity-category">카테고리</label>
+        <select id="activity-category">
+          <option value="관광">🏛️ 관광</option>
+          <option value="식사">🍽️ 식사</option>
+          <option value="교통">🚌 교통</option>
+          <option value="숙박">🏨 숙박</option>
+          <option value="쇼핑">🛍️ 쇼핑</option>
+          <option value="체험">🎟️ 체험</option>
+          <option value="기타">📌 기타</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="activity-title">제목</label>
@@ -97,6 +124,119 @@
         <button type="submit" class="btn-primary">저장</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- 초대 설정 모달 (관리자 전용) -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>방 초대 설정</h2>
+      <button class="modal-close" data-close="modal-invite">✕</button>
+    </div>
+    <div class="form-group">
+      <label>방 공개 설정</label>
+      <div class="room-type-row">
+        <label class="room-type-opt">
+          <input type="radio" name="room-type" value="public" checked>
+          <span class="room-type-pill">🌐 공개 방</span>
+        </label>
+        <label class="room-type-opt">
+          <input type="radio" name="room-type" value="private">
+          <span class="room-type-pill">🔒 사설 방</span>
+        </label>
+      </div>
+      <p class="form-hint" id="invite-type-hint">초대 링크만 있으면 누구나 참여할 수 있어요.</p>
+    </div>
+    <div class="form-group hidden" id="invite-password-group">
+      <label for="invite-password">방 암호</label>
+      <input type="text" id="invite-password" placeholder="참여자가 입력할 암호 (4자 이상)" autocomplete="off" maxlength="40">
+      <span class="field-error" id="err-invite-password"></span>
+    </div>
+    <div class="form-group">
+      <label for="invite-link-output">초대 링크</label>
+      <div class="invite-link-wrap">
+        <input type="text" id="invite-link-output" readonly>
+        <button type="button" class="btn-outline btn-sm" id="btn-copy-invite-link">복사</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" data-close="modal-invite">닫기</button>
+      <button type="button" class="btn-primary" id="btn-save-invite">설정 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 방 입장 모달 (암호 + 닉네임) -->
+<div class="modal-overlay" id="modal-join-room">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>방 참여</h2>
+      <button class="modal-close" data-close="modal-join-room">✕</button>
+    </div>
+    <p class="confirm-msg" id="join-room-title-line"></p>
+    <div class="form-group hidden" id="join-password-group">
+      <label for="join-password-input">방 암호</label>
+      <input type="password" id="join-password-input" placeholder="관리자가 알려준 암호" autocomplete="off">
+      <span class="field-error" id="err-join-password"></span>
+    </div>
+    <div class="form-group">
+      <label for="join-nickname-input">방에서 사용할 닉네임</label>
+      <input type="text" id="join-nickname-input" placeholder="예: 길동" autocomplete="off" maxlength="20">
+      <span class="field-error" id="err-join-nickname"></span>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" data-close="modal-join-room">취소</button>
+      <button type="button" class="btn-primary" id="btn-confirm-join">참여하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 닉네임 수정 모달 -->
+<div class="modal-overlay" id="modal-nickname">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>닉네임 수정</h2>
+      <button class="modal-close" data-close="modal-nickname">✕</button>
+    </div>
+    <div class="form-group">
+      <label for="nickname-edit-input">이 방에서 사용할 닉네임</label>
+      <input type="text" id="nickname-edit-input" placeholder="예: 길동" autocomplete="off" maxlength="20">
+      <span class="field-error" id="err-nickname-edit"></span>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" data-close="modal-nickname">취소</button>
+      <button type="button" class="btn-primary" id="btn-save-nickname">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 가계부 모달 -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2>💰 가계부</h2>
+      <button class="modal-close" data-close="modal-budget">✕</button>
+    </div>
+    <div id="budget-body" class="budget-body"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" data-close="modal-budget">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 참여자 관리 모달 (관리자 전용) -->
+<div class="modal-overlay" id="modal-members">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>참여자 관리</h2>
+      <button class="modal-close" data-close="modal-members">✕</button>
+    </div>
+    <p class="confirm-msg" style="text-align:left">멤버에게 뷰어/편집자 권한을 부여하거나, 관리자를 위임하고 추방할 수 있어요.</p>
+    <div id="member-list" class="member-list"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" data-close="modal-members">닫기</button>
+    </div>
   </div>
 </div>
 

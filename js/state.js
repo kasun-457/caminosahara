@@ -11,11 +11,13 @@ export const state = {
   unsubscribeTrips: null,
   startPicker: null,
   endPicker: null,
-  tripSort: 'startDate',   // 'recent' | 'startDate' | 'name' | 'manual'
+  tripSort: 'startDate', // 'recent' | 'startDate' | 'name' | 'manual'
   calView: 'list',
   calDateOffset: 0,
   gridScrollController: null,
   authMode: 'login',
   dpAutocompletes: [],
   detailContext: { activityId: null, date: null },
+  pendingJoin: null, // { tripId, joinCode, source: 'url'|'paste' }
+  inviteTripId: null,
 };

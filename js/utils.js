@@ -10,6 +10,12 @@ export function generateShareCode() {
   return Array.from(arr, b => b.toString(36)).join('').slice(0, 8).toUpperCase();
 }
 
+export async function sha256Hex(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function getDays(start, end) {
   const days = [];
   const s = new Date(start + 'T00:00:00');
@@ -30,9 +36,11 @@ export function fmtDate(dateStr) {
 }
 
 export function fmtShort(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('ko-KR', {
-    month: 'numeric', day: 'numeric',
-  });
+  const d = new Date(dateStr + 'T00:00:00');
+  const yy = String(d.getFullYear()).slice(2);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${yy}.${m}.${day}`;
 }
 
 export function fmtTab(dateStr) {
@@ -81,4 +89,25 @@ export function showToast(msg) {
     t.classList.remove('toast-show');
     setTimeout(() => t.remove(), 300);
   }, 2500);
+}
+
+// 15분 단위 시간 선택 관련 유틸
+export function generateTimeOptions() {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hStr = String(h).padStart(2, '0');
+      const mStr = String(m).padStart(2, '0');
+      times.push(`${hStr}:${mStr}`);
+    }
+  }
+  return times;
+}
+
+export function renderTimeSelect(value = '') {
+  const times = generateTimeOptions();
+  const options = times.map(t =>
+    `<option value="${t}" ${t === value ? 'selected' : ''}>${t}</option>`
+  ).join('');
+  return `<select class="time-select">${options}</select>`;
 }
