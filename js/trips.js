@@ -363,13 +363,8 @@ export function openTrip(tripId) {
   document.getElementById('trip-hero').style.setProperty('--trip-color', trip.color);
   document.getElementById('day-tabs').style.setProperty('--trip-color', trip.color);
 
-  // 관리자 전용 버튼 / 멤버 전용 버튼 표시 제어
-  const owner = isOwner(trip);
-  document.getElementById('btn-share-trip').style.display       = owner ? '' : 'none';
-  document.getElementById('btn-members').style.display          = '';          // 모든 참여자에게 표시
-  document.getElementById('btn-edit-trip').style.display        = owner ? '' : 'none';
-  document.getElementById('btn-delete-trip').style.display      = owner ? '' : 'none';
-  document.getElementById('btn-leave-trip').style.display       = owner ? 'none' : '';
+  // 버튼 표시 (초대·닉네임·수정·삭제는 참여자/설정 모달로 통합)
+  // btn-members, btn-budget, btn-settings 는 항상 표시
 
   state.calView = 'list';
   document.querySelectorAll('.cal-view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'list'));
@@ -502,6 +497,161 @@ async function saveInviteSettings() {
   } finally {
     btn.disabled = false;
     btn.textContent = original;
+  }
+}
+
+// ── 참여자 모달 내 초대 이벤트 초기화 ─────────────────────────────────────────
+export function initMembersInviteEvents() {
+  // 방 공개/사설 라디오
+  document.querySelectorAll('input[name="members-room-type"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const trip = state.trips.find(t => t.id === state.currentTripId);
+      const has  = !!trip?.roomPassword;
+      _updateMembersInviteTypeUI(
+        r.value, has,
+        document.getElementById('members-invite-type-hint'),
+        document.getElementById('members-invite-password-group'),
+        document.getElementById('members-invite-password'),
+      );
+    });
+  });
+
+  // 링크 복사
+  document.getElementById('btn-copy-members-invite-link').addEventListener('click', async () => {
+    const url = document.getElementById('members-invite-link-output').value;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('초대 링크가 복사되었습니다!');
+    } catch {
+      prompt('아래 링크를 복사하세요:', url);
+    }
+  });
+
+  // 방장: 초대 설정 저장
+  document.getElementById('btn-save-members-invite').addEventListener('click', saveMembersInviteSettings);
+}
+
+async function saveMembersInviteSettings() {
+  const tripId = state.currentTripId;
+  if (!tripId) return;
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip || !isOwner(trip)) return;
+
+  const type  = document.querySelector('input[name="members-room-type"]:checked')?.value || 'public';
+  const pwIn  = document.getElementById('members-invite-password');
+  const errEl = document.getElementById('err-members-invite-password');
+  errEl.textContent = '';
+
+  const update = { roomType: type };
+  if (type === 'public') {
+    update.roomPassword = '';
+  } else {
+    const raw = pwIn.value;
+    const hasExisting = !!trip.roomPassword;
+    if (!raw && !hasExisting) { errEl.textContent = '암호를 입력해주세요.'; pwIn.focus(); return; }
+    if (raw) {
+      if (raw.length < 4) { errEl.textContent = '암호는 4자 이상이어야 해요.'; pwIn.focus(); return; }
+      update.roomPassword = await sha256Hex(raw);
+    }
+  }
+
+  const btn = document.getElementById('btn-save-members-invite');
+  btn.disabled = true;
+  btn.textContent = '저장 중…';
+  try {
+    await db.collection('trips').doc(tripId).update(update);
+    showToast(type === 'private' ? '사설 방으로 설정됐습니다.' : '공개 방으로 설정됐습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('저장에 실패했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '설정 저장';
+  }
+}
+
+// ── 설정 모달 ─────────────────────────────────────────────────────────────────
+export function openSettingsModal(tripId) {
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip) return;
+  renderSettingsModal(trip);
+  openModal('modal-settings');
+}
+
+function renderSettingsModal(trip) {
+  const owner = isOwner(trip);
+  const body  = document.getElementById('settings-body');
+
+  body.innerHTML = `
+    <!-- 닉네임 수정 -->
+    <div class="settings-section">
+      <div class="settings-section-title">닉네임 수정</div>
+      <div class="settings-nickname-row">
+        <input type="text" id="settings-nickname-input" class="settings-input"
+               placeholder="방에서 사용할 닉네임" maxlength="20" autocomplete="off"
+               value="${escapeHtml(trip.memberProfiles?.[state.currentUser?.uid]?.nickname || '')}">
+        <button class="btn-primary btn-sm" id="btn-settings-save-nickname">저장</button>
+      </div>
+      <span class="field-error" id="err-settings-nickname"></span>
+    </div>
+
+    ${owner ? `
+    <!-- 여행 수정 (방장) -->
+    <div class="settings-section">
+      <div class="settings-section-title">여행 관리</div>
+      <div class="settings-action-list">
+        <button class="settings-action-btn" id="btn-settings-edit-trip">
+          <span>✏️ 여행 정보 수정</span>
+          <span class="settings-action-chevron">›</span>
+        </button>
+        <button class="settings-action-btn settings-action-danger" id="btn-settings-delete-trip">
+          <span>🗑 여행 삭제</span>
+          <span class="settings-action-chevron">›</span>
+        </button>
+      </div>
+    </div>` : `
+    <!-- 여행 나가기 (참여자) -->
+    <div class="settings-section">
+      <button class="settings-action-btn settings-action-danger" id="btn-settings-leave-trip">
+        <span>🚪 여행 나가기</span>
+        <span class="settings-action-chevron">›</span>
+      </button>
+    </div>`}
+  `;
+
+  // 닉네임 저장
+  document.getElementById('btn-settings-save-nickname').addEventListener('click', async () => {
+    const input  = document.getElementById('settings-nickname-input');
+    const errEl  = document.getElementById('err-settings-nickname');
+    const nickname = input.value.trim();
+    errEl.textContent = '';
+    if (!nickname) { errEl.textContent = '닉네임을 입력해주세요.'; input.focus(); return; }
+    const uid = state.currentUser?.uid;
+    try {
+      await db.collection('trips').doc(trip.id).update({
+        [`memberProfiles.${uid}.nickname`]: nickname,
+      });
+      showToast('닉네임이 변경됐습니다.');
+    } catch (err) {
+      console.error(err);
+      showToast('닉네임 변경에 실패했습니다.');
+    }
+  });
+
+  if (owner) {
+    document.getElementById('btn-settings-edit-trip').addEventListener('click', () => {
+      closeModal('modal-settings');
+      openTripModal(trip.id);
+    });
+    document.getElementById('btn-settings-delete-trip').addEventListener('click', () => {
+      closeModal('modal-settings');
+      confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(trip.id));
+    });
+  } else {
+    document.getElementById('btn-settings-leave-trip').addEventListener('click', () => {
+      closeModal('modal-settings');
+      leaveTrip(trip.id);
+    });
   }
 }
 
@@ -746,6 +896,42 @@ function renderMembersModal(trip) {
   } else {
     // 편집자 이상은 요청 섹션 숨김
     requestSection.style.display = 'none';
+  }
+
+  // ── 초대 링크 섹션 ───────────────────────────────────────────────────────
+  const inviteLink = `${location.origin}${location.pathname}?tripId=${trip.id}&join=${trip.shareCode}`;
+  document.getElementById('members-invite-link-output').value = inviteLink;
+
+  const ownerSettings  = document.getElementById('members-invite-owner-settings');
+  const ownerSaveRow   = document.getElementById('members-invite-save-row');
+  const pwGroup        = document.getElementById('members-invite-password-group');
+  const pwInput        = document.getElementById('members-invite-password');
+  const typeHint       = document.getElementById('members-invite-type-hint');
+
+  if (owner) {
+    ownerSettings.style.display = '';
+    ownerSaveRow.style.display  = '';
+    const isPrivate = trip.roomType === 'private';
+    document.querySelectorAll('input[name="members-room-type"]').forEach(r => {
+      r.checked = r.value === (isPrivate ? 'private' : 'public');
+    });
+    pwInput.value = '';
+    document.getElementById('err-members-invite-password').textContent = '';
+    _updateMembersInviteTypeUI(isPrivate ? 'private' : 'public', isPrivate, typeHint, pwGroup, pwInput);
+  } else {
+    ownerSettings.style.display = 'none';
+    ownerSaveRow.style.display  = 'none';
+  }
+}
+
+function _updateMembersInviteTypeUI(type, alreadyHasPassword, hint, pwGroup, pwInput) {
+  if (type === 'private') {
+    hint.textContent = '초대 링크와 암호를 모두 알아야 참여할 수 있어요.';
+    pwGroup.classList.remove('hidden');
+    pwInput.placeholder = alreadyHasPassword ? '비워두면 기존 암호 유지' : '참여자가 입력할 암호 (4자 이상)';
+  } else {
+    hint.textContent = '초대 링크만 있으면 누구나 참여할 수 있어요.';
+    pwGroup.classList.add('hidden');
   }
 }
 

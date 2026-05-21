@@ -3441,6 +3441,98 @@ textarea { resize: vertical; min-height: 80px; }
   color: #f06060;
 }
 
+/* ── 참여자 모달 내 초대 섹션 ────────────────────────────────────────────── */
+.members-invite-section {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.8rem;
+}
+
+.members-invite-divider {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ── 설정 모달 ───────────────────────────────────────────────────────────── */
+.settings-section {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.65rem;
+}
+
+.settings-nickname-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.settings-input {
+  flex: 1;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 0.45rem 0.7rem;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.settings-input:focus { border-color: var(--accent); }
+
+.settings-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.settings-action-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  text-align: left;
+}
+
+.settings-action-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--muted);
+}
+
+.settings-action-btn.settings-action-danger { color: #f06060; }
+.settings-action-btn.settings-action-danger:hover { border-color: #f06060; background: rgba(240,96,96,0.08); }
+
+.settings-action-chevron {
+  font-size: 1.1rem;
+  color: var(--muted);
+  line-height: 1;
+}
+
 /* ── 가계부 모달 ───────────────────────────────────────────────────────── */
 .budget-body {
   max-height: 70vh;

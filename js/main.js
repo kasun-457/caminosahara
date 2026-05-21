@@ -10,8 +10,9 @@ import {
 import {
   openTripModal, saveTripForm,
   renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
-  leaveTrip, openInviteModal, initInviteModal, initJoinRoomModal, openMembersModal,
-  openEditNicknameModal, initNicknameModal, initTripCurrencyPicker,
+  leaveTrip, initInviteModal, initMembersInviteEvents, initJoinRoomModal,
+  openMembersModal, openSettingsModal,
+  initNicknameModal, initTripCurrencyPicker,
 } from './trips.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
@@ -98,18 +99,13 @@ async function init() {
   document.getElementById('btn-new-trip-empty').addEventListener('click', () => openTripModal());
   document.getElementById('nav-back').addEventListener('click', goBack);
   document.getElementById('nav-logo').addEventListener('click', () => { if (state.currentTripId) goBack(); });
-  document.getElementById('btn-share-trip').addEventListener('click', () => openInviteModal(state.currentTripId));
   document.getElementById('btn-members').addEventListener('click', () => openMembersModal(state.currentTripId));
-  document.getElementById('btn-edit-nickname').addEventListener('click', () => openEditNicknameModal());
   document.getElementById('btn-budget').addEventListener('click', () => openBudgetModal());
-  document.getElementById('btn-edit-trip').addEventListener('click', () => openTripModal(state.currentTripId));
-  document.getElementById('btn-delete-trip').addEventListener('click', () => {
-    confirmAction('이 여행을 삭제할까요? 모든 일정도 함께 삭제됩니다.', () => deleteTrip(state.currentTripId));
-  });
-  document.getElementById('btn-leave-trip').addEventListener('click', () => leaveTrip(state.currentTripId));
+  document.getElementById('btn-settings').addEventListener('click', () => openSettingsModal(state.currentTripId));
 
-  // 초대 / 방 참여 / 닉네임 모달 초기화
+  // 초대 / 방 참여 / 모달 초기화
   initInviteModal();
+  initMembersInviteEvents();
   initJoinRoomModal();
   initNicknameModal();
   initTripCurrencyPicker();
@@ -194,7 +190,7 @@ async function init() {
     }
     ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account',
      'modal-invite', 'modal-join-room', 'modal-members', 'modal-nickname',
-     'modal-budget'].forEach(id => {
+     'modal-budget', 'modal-settings'].forEach(id => {
       if (document.getElementById(id).classList.contains('active')) closeModal(id);
     });
   });
