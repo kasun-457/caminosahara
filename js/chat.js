@@ -154,7 +154,10 @@ function renderChatMessages() {
     const displayName = escapeHtml(profile.nickname || profile.name || profile.email || (senderUid?.slice(0, 8) + '…'));
     const ts         = msg.createdAt?.toDate ? msg.createdAt.toDate() : null;
     const dayKey     = ts ? ts.toDateString() : '';
-    const timeLabel  = ts ? ts.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+    const isPending  = !msg.createdAt;
+    const timeLabel  = isPending
+      ? '<span class="chat-msg-pending">전송중…</span>'
+      : (ts ? ts.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '');
 
     let dayDivider = '';
     if (ts && dayKey !== prevDay) {
@@ -741,6 +744,16 @@ export function initChatPanel() {
     if (e.key === 'Escape') closeContextMenu();
   });
   messagesEl?.addEventListener('scroll', closeContextMenu);
+
+  // 스크롤 중에만 스크롤바 표시 (1초 동안 추가 스크롤 없으면 숨김)
+  let _scrollHideTimer = null;
+  messagesEl?.addEventListener('scroll', () => {
+    messagesEl.classList.add('scrolling');
+    clearTimeout(_scrollHideTimer);
+    _scrollHideTimer = setTimeout(() => {
+      messagesEl.classList.remove('scrolling');
+    }, 1000);
+  }, { passive: true });
 
   // 다른 멤버가 채팅을 읽거나 공지를 등록/해제하면 trip 문서가 갱신됨 → 재렌더
   document.addEventListener('trips-updated', () => {

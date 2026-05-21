@@ -111,6 +111,19 @@ async function init() {
     tab.addEventListener('click', () => switchMainView(tab.dataset.mainView));
   });
 
+  // 맨 위로 버튼 — 일정 탭에서 일정 스크롤 시에만 표시
+  const scrollTopBtn = document.getElementById('btn-scroll-top');
+  scrollTopBtn?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  window.addEventListener('scroll', () => {
+    const tripView = document.getElementById('view-trip');
+    const onScheduleTab = document
+      .querySelector('.main-view-tab.active')?.dataset.mainView === 'schedule';
+    const show = tripView?.classList.contains('active') && onScheduleTab && window.scrollY > 400;
+    scrollTopBtn?.classList.toggle('visible', show);
+  }, { passive: true });
+
   // 참여자 모달 내 초대 / 방 참여 / 통화 선택 초기화
   initMembersInviteEvents();
   initJoinRoomModal();

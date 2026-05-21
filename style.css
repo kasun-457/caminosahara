@@ -772,7 +772,7 @@ h1 {
   flex: 1;
   min-width: 0;
   font-size: 0.875rem;
-  color: #f1f1f1;
+  color: #b8b8b8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3646,6 +3646,28 @@ main, header {
   flex-direction: column;
   gap: 0.35rem;
   scroll-behavior: smooth;
+
+  /* 기본은 스크롤바 숨김 — 스크롤 중에만 .scrolling 클래스로 노출 */
+  scrollbar-width: none;          /* Firefox */
+}
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+.chat-messages.scrolling {
+  scrollbar-width: thin;          /* Firefox */
+  scrollbar-color: rgba(255,255,255,0.25) transparent;
+}
+.chat-messages.scrolling::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25);
+}
+.chat-messages.scrolling::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.4);
 }
 
 .chat-empty {
@@ -3711,6 +3733,18 @@ main, header {
   font-size: 0.68rem;
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* 전송 중 표시 — 시간 자리에 노출 */
+.chat-msg-pending {
+  font-size: 0.66rem;
+  color: var(--muted);
+  font-style: italic;
+  animation: chat-pending-pulse 1.2s ease-in-out infinite;
+}
+@keyframes chat-pending-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
 }
 
 /* 시간 + 안 읽은 수를 세로로 쌓는 메타 영역 */
@@ -3860,6 +3894,41 @@ main, header {
   background: rgba(255,255,255,0.08);
   color: var(--text, #e5e7eb);
 }
+
+/* ── 맨 위로 버튼 ────────────────────────────────────────────────────────── */
+.scroll-top-fab {
+  position: fixed;
+  bottom: calc(1.5rem + 56px + 12px);   /* 채팅 FAB(56px) 바로 위 */
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface2, #1f2230);
+  color: var(--text, #e5e7eb);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  z-index: 155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity .2s, transform .2s, background .15s;
+}
+.scroll-top-fab.visible {
+  opacity: 0.92;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.scroll-top-fab:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent, #d4ff4d) 18%, var(--surface2, #1f2230));
+}
+.scroll-top-icon { line-height: 1; pointer-events: none; }
 
 .chat-input-row {
   display: flex;

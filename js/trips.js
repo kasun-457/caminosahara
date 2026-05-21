@@ -117,17 +117,46 @@ export function applySortPref() {
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  Firestore 구독
+// 일정 렌더에 영향을 주는 필드만 추려서 지문(fingerprint)을 만든다.
+// 채팅 전용 필드(lastMessage / readState / notice / _geoCache)는 제외해
+// 채팅 활동만으로 일정이 재렌더되지 않도록 한다.
+function scheduleFingerprint(trip) {
+  if (!trip) return '';
+  return JSON.stringify({
+    title: trip.title,
+    destination: trip.destination,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    color: trip.color,
+    ownerId: trip.ownerId,
+    memberIds: trip.memberIds,
+    memberProfiles: trip.memberProfiles,
+    days: trip.days,
+    shareCode: trip.shareCode,
+    pendingEditRequests: trip.pendingEditRequests,
+  });
+}
+
+let _lastScheduleFp = '';
+
 // ══════════════════════════════════════════════════════════════════════════════
 export function subscribeToTrips() {
   if (state.unsubscribeTrips) state.unsubscribeTrips();
   let _firstLoad = true;
+  let _lastTripListFp = '';
   state.unsubscribeTrips = db.collection('trips')
     .where('memberIds', 'array-contains', state.currentUser.uid)
     .onSnapshot(snapshot => {
       state.trips = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-      renderTripList();
+
+      // 트립 목록도 채팅 필드 변경만으로는 재렌더할 필요 없음
+      const listFp = JSON.stringify(state.trips.map(scheduleFingerprint));
+      if (listFp !== _lastTripListFp) {
+        _lastTripListFp = listFp;
+        renderTripList();
+      }
 
       // 첫 로드 시 해시에서 여행 ID 복원
       if (_firstLoad) {
@@ -143,8 +172,13 @@ export function subscribeToTrips() {
       if (state.currentTripId) {
         const trip = state.trips.find(t => t.id === state.currentTripId);
         if (trip) {
-          if (state.calView === 'list') renderDayTabs(trip);
-          else renderGridView(trip);
+          // 일정/지도/가계부에 영향 주는 필드가 변했을 때만 재렌더
+          const fp = scheduleFingerprint(trip);
+          if (fp !== _lastScheduleFp) {
+            _lastScheduleFp = fp;
+            if (state.calView === 'list') renderDayTabs(trip);
+            else renderGridView(trip);
+          }
         } else {
           goBack();
         }
@@ -153,6 +187,11 @@ export function subscribeToTrips() {
       // 채팅 모듈 등 다른 모듈이 트립 데이터 변경(읽음 상태 등)에 반응할 수 있도록
       document.dispatchEvent(new CustomEvent('trips-updated'));
     }, err => console.error('Firestore 오류:', err));
+}
+
+// 다른 모듈(activities 등)이 강제 재렌더를 원할 때 사용
+export function resetScheduleRenderCache() {
+  _lastScheduleFp = '';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -374,6 +413,7 @@ export function memberDisplayName(trip, uid) {
 // ══════════════════════════════════════════════════════════════════════════════
 export function openTrip(tripId) {
   state.currentTripId = tripId;
+  _lastScheduleFp = ''; // 새 트립으로 전환 → 다음 스냅샷에서 강제 1회 렌더 허용
   window.history.replaceState(null, '', '#' + tripId);
   state.currentDayIndex = 0;
   state.calDateOffset = 0;
