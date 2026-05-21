@@ -54,9 +54,17 @@
         <button class="chat-panel-close" id="btn-chat-close" aria-label="채팅 닫기">✕</button>
       </div>
       <div id="chat-messages" class="chat-messages"></div>
+
+      <!-- 첨부 파일 미리보기 -->
+      <div id="chat-attachments-preview" class="chat-attachments-preview" style="display:none">
+        <div id="chat-attachments-list" class="chat-attachments-list"></div>
+      </div>
+
       <div class="chat-input-row">
+        <button class="chat-attach-btn" id="btn-chat-attach" title="파일 첨부">📎</button>
+        <input type="file" id="chat-file-input" multiple style="display:none">
         <textarea id="chat-input" class="chat-input"
-                  placeholder="메시지를 입력하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"
+                  placeholder="메시지를 입력하세요"
                   rows="1" maxlength="1000"></textarea>
         <button class="btn-primary btn-sm" id="btn-chat-send">전송</button>
       </div>

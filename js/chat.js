@@ -4,9 +4,18 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { state } from './state.js';
 import { db } from './firebase.js';
+import { storage } from './firebase.js';
 import { showToast, escapeHtml } from './utils.js';
 
 const MSG_MAX_LEN = 1000;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+let _pendingAttachments = []; // { file, type }
 
 // ── 채팅 패널 열기/닫기/토글 ────────────────────────────────────────────────
 export function openChatPanel() {
@@ -112,12 +121,29 @@ function renderChatMessages() {
       ? `<div class="chat-msg-sender">${displayName}</div>`
       : '';
 
+    // 텍스트 부분
+    const textBubble = msg.text
+      ? `<div class="chat-msg-bubble">${escapeHtml(msg.text)}</div>`
+      : '';
+
+    // 첨부파일 부분
+    const attachmentsHtml = (msg.attachments || []).map(att => {
+      if (att.type === 'image') {
+        return `<div class="chat-attachment-img"><img src="${escapeHtml(att.url)}" alt="${escapeHtml(att.name)}" loading="lazy"></div>`;
+      } else {
+        return `<div class="chat-attachment-file"><a href="${escapeHtml(att.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(att.name)}</a></div>`;
+      }
+    }).join('');
+
     return `
       ${dayDivider}
       <div class="chat-msg ${isMine ? 'chat-msg-mine' : 'chat-msg-other'}">
         ${header}
         <div class="chat-msg-row">
-          <div class="chat-msg-bubble">${escapeHtml(msg.text || '')}</div>
+          <div class="chat-msg-content">
+            ${textBubble}
+            ${attachmentsHtml}
+          </div>
           <span class="chat-msg-time">${timeLabel}</span>
         </div>
       </div>`;
@@ -130,28 +156,61 @@ function renderChatMessages() {
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
-  if (!text) return;
-  if (text.length > MSG_MAX_LEN) {
+
+  // Allow sending either text or attachments (or both)
+  if (!text && _pendingAttachments.length === 0) return;
+
+  if (text && text.length > MSG_MAX_LEN) {
     showToast(`메시지는 ${MSG_MAX_LEN}자 이하로 작성해주세요.`);
     return;
   }
+
   const tripId = state.currentTripId;
   const uid    = state.currentUser?.uid;
   if (!tripId || !uid) return;
 
-  input.value = '';
-  autoResizeInput();
+  const btn = document.getElementById('btn-chat-send');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '전송 중...';
 
   try {
+    // Upload pending attachments to Firebase Storage
+    const attachments = [];
+    for (const { file, type } of _pendingAttachments) {
+      const path = `trips/${tripId}/chat/${Date.now()}-${file.name}`;
+      const ref = storage.ref(path);
+      await ref.put(file);
+      const url = await ref.getDownloadURL();
+      attachments.push({
+        name: file.name,
+        url,
+        type
+      });
+    }
+
+    // Send message with text and/or attachments
     await db.collection('trips').doc(tripId).collection('messages').add({
       text,
       senderUid: uid,
+      attachments,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
+
+    input.value = '';
+    autoResizeInput();
+    _pendingAttachments = [];
+
+    // Clear attachments preview
+    const preview = document.getElementById('chat-attachments-preview');
+    if (preview) preview.style.display = 'none';
+    document.getElementById('chat-attachments-list').innerHTML = '';
   } catch (err) {
     console.error(err);
-    showToast('메시지 전송에 실패했습니다.');
-    input.value = text;
+    showToast('전송에 실패했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
@@ -162,11 +221,93 @@ function autoResizeInput() {
   input.style.height = Math.min(input.scrollHeight, 140) + 'px';
 }
 
+function onFileSelected(files) {
+  if (!files || files.length === 0) return;
+
+  for (const file of files) {
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(`파일 크기가 너무 큽니다. (최대 ${MAX_FILE_SIZE / 1024 / 1024}MB)`);
+      continue;
+    }
+
+    let type = null;
+    if (ALLOWED_IMG_TYPES.includes(file.type)) {
+      type = 'image';
+    } else if (ALLOWED_FILE_TYPES.includes(file.type)) {
+      type = 'file';
+    } else {
+      showToast(`지원하지 않는 파일 형식입니다: ${file.type}`);
+      continue;
+    }
+
+    _pendingAttachments.push({ file, type });
+
+    // Add to preview list
+    const list = document.getElementById('chat-attachments-list');
+    const preview = document.getElementById('chat-attachments-preview');
+
+    const item = document.createElement('div');
+    item.className = 'chat-attachment-item';
+    const index = _pendingAttachments.length - 1;
+
+    if (type === 'image') {
+      const reader = new FileReader();
+      reader.onload = e => {
+        item.innerHTML = `
+          <div class="chat-attachment-preview">
+            <img src="${e.target.result}" alt="${escapeHtml(file.name)}" style="max-width:100px; max-height:100px;">
+            <button type="button" class="chat-attachment-remove" data-index="${index}">✕</button>
+          </div>
+        `;
+        item.querySelector('.chat-attachment-remove')?.addEventListener('click', e => {
+          e.preventDefault();
+          _pendingAttachments.splice(index, 1);
+          item.remove();
+          if (_pendingAttachments.length === 0) {
+            preview.style.display = 'none';
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      item.innerHTML = `
+        <div class="chat-attachment-file-item">
+          <span>📄 ${escapeHtml(file.name)}</span>
+          <button type="button" class="chat-attachment-remove" data-index="${index}">✕</button>
+        </div>
+      `;
+      item.querySelector('.chat-attachment-remove')?.addEventListener('click', e => {
+        e.preventDefault();
+        _pendingAttachments.splice(index, 1);
+        item.remove();
+        if (_pendingAttachments.length === 0) {
+          preview.style.display = 'none';
+        }
+      });
+    }
+
+    list.appendChild(item);
+    preview.style.display = 'block';
+  }
+
+  // Reset file input
+  document.getElementById('chat-file-input').value = '';
+}
+
 // ── 이벤트 초기화 ──────────────────────────────────────────────────────────
 export function initChatPanel() {
   document.getElementById('btn-chat-fab')?.addEventListener('click', toggleChatPanel);
   document.getElementById('btn-chat-close')?.addEventListener('click', closeChatPanel);
   document.getElementById('btn-chat-send')?.addEventListener('click', sendMessage);
+
+  // File attachment
+  document.getElementById('btn-chat-attach')?.addEventListener('click', () => {
+    document.getElementById('chat-file-input')?.click();
+  });
+  document.getElementById('chat-file-input')?.addEventListener('change', e => {
+    onFileSelected(e.target.files);
+  });
 
   const input = document.getElementById('chat-input');
   input?.addEventListener('input', autoResizeInput);

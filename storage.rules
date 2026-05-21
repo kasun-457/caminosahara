@@ -33,5 +33,36 @@ service firebase.storage {
       // 삭제: 멤버만
       allow delete: if isTripMember();
     }
+
+    // ── /trips/{tripId}/chat/{fileName} ────────────────────────────────────
+    //  채팅에 첨부되는 파일 (이미지 / PDF / 문서)
+    //  해당 여행의 memberIds에 포함된 사용자만 읽기/쓰기 가능
+    match /trips/{tripId}/chat/{fileName} {
+
+      // 여행 멤버인지 확인 (Firestore 교차 조회)
+      function isTripMember() {
+        return request.auth != null
+          && request.auth.uid in firestore.get(/databases/(default)/documents/trips/$(tripId)).data.memberIds;
+      }
+
+      // 읽기: 멤버만
+      allow read: if isTripMember();
+
+      // 업로드: 멤버 + 파일 크기 10MB 이하 + 허용 MIME 타입만
+      allow create: if isTripMember()
+        && request.resource.size < 10 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf'
+          || request.resource.contentType == 'application/msword'
+          || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          || request.resource.contentType == 'application/vnd.ms-excel'
+          || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+
+      // 삭제: 업로드한 사용자만 (파일명에 타임스탄프가 있어 순차적 고유성 보장)
+      // 또는 여행 멤버라면 허용
+      allow delete: if isTripMember();
+    }
   }
 }

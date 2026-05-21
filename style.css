@@ -3740,6 +3740,126 @@ main, header {
 
 .chat-input:focus { border-color: var(--accent); }
 
+.chat-attach-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.chat-attach-btn:hover { background: var(--surface3); }
+
+.chat-attachments-preview {
+  padding: 0.6rem 0.9rem 0;
+  border-top: 1px solid var(--border);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.chat-attachments-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-attachment-item {
+  position: relative;
+}
+
+.chat-attachment-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.chat-attachment-preview img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface3);
+}
+
+.chat-attachment-file-item {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.chat-attachment-file-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+
+.chat-attachment-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chat-attachment-remove:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.chat-msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-attachment-img {
+  display: inline-block;
+}
+
+.chat-attachment-img img {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  max-width: 100%;
+  max-height: 220px;
+}
+
+.chat-attachment-file {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.chat-attachment-file a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.chat-attachment-file a:hover { opacity: 0.8; text-decoration: underline; }
+
 /* 모바일: 채팅 패널이 전체 화면을 덮음 (분할 대신 오버레이) */
 @media (max-width: 720px) {
   :root { --chat-panel-width: 100vw; }
