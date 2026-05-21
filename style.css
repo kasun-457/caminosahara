@@ -3740,6 +3740,111 @@ main, header {
 
 .chat-input:focus { border-color: var(--accent); }
 
+/* ── 메시지 수정/삭제 UI ───────────────────────────────────────────── */
+.chat-msg-edited {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-left: 0.3rem;
+  opacity: 0.7;
+}
+
+.chat-msg-actions {
+  position: relative;
+  align-self: flex-end;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chat-msg:hover .chat-msg-actions,
+.chat-msg-actions:focus-within {
+  opacity: 1;
+}
+
+.chat-msg-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, color 0.15s;
+}
+
+.chat-msg-menu-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.chat-msg-menu {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 10;
+  min-width: 90px;
+  padding: 0.25rem;
+}
+
+.chat-msg-menu.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-msg-menu button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+}
+
+.chat-msg-menu button:hover { background: var(--surface3); }
+.chat-msg-menu button[data-action="delete"]:hover {
+  background: color-mix(in srgb, #e74c3c 20%, var(--surface3));
+  color: #ff7869;
+}
+
+.chat-msg-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface3);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 0.5rem 0.7rem;
+  min-width: 200px;
+}
+
+.chat-msg-edit-input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 36px;
+  max-height: 180px;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.chat-msg-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
 .chat-attach-btn {
   background: transparent;
   border: none;

@@ -16,6 +16,7 @@ const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 
 let _pendingAttachments = []; // { file, type }
+let _editingMessageId = null; // 현재 편집 중인 메시지 ID
 
 // ── 채팅 패널 열기/닫기/토글 ────────────────────────────────────────────────
 export function openChatPanel() {
@@ -121,9 +122,27 @@ function renderChatMessages() {
       ? `<div class="chat-msg-sender">${displayName}</div>`
       : '';
 
+    const isEditing = isMine && _editingMessageId === msg.id;
+    const editedLabel = msg.editedAt ? ' <span class="chat-msg-edited">(수정됨)</span>' : '';
+
+    // 편집 모드: textarea + 저장/취소 버튼
+    if (isEditing) {
+      return `
+        ${dayDivider}
+        <div class="chat-msg chat-msg-mine" data-msg-id="${msg.id}">
+          <div class="chat-msg-edit-box">
+            <textarea class="chat-msg-edit-input" maxlength="${MSG_MAX_LEN}">${escapeHtml(msg.text || '')}</textarea>
+            <div class="chat-msg-edit-actions">
+              <button type="button" class="btn-sm btn-outline" data-action="edit-cancel">취소</button>
+              <button type="button" class="btn-sm btn-primary" data-action="edit-save">저장</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
     // 텍스트 부분
     const textBubble = msg.text
-      ? `<div class="chat-msg-bubble">${escapeHtml(msg.text)}</div>`
+      ? `<div class="chat-msg-bubble">${escapeHtml(msg.text)}${editedLabel}</div>`
       : '';
 
     // 첨부파일 부분
@@ -135,11 +154,22 @@ function renderChatMessages() {
       }
     }).join('');
 
+    // 자기 메시지에만 액션 메뉴 버튼 표시
+    const actionsBtn = isMine ? `
+      <div class="chat-msg-actions">
+        <button type="button" class="chat-msg-menu-btn" data-action="menu" aria-label="메뉴">⋯</button>
+        <div class="chat-msg-menu" data-msg-id="${msg.id}">
+          ${msg.text ? '<button type="button" data-action="edit">수정</button>' : ''}
+          <button type="button" data-action="delete">삭제</button>
+        </div>
+      </div>` : '';
+
     return `
       ${dayDivider}
-      <div class="chat-msg ${isMine ? 'chat-msg-mine' : 'chat-msg-other'}">
+      <div class="chat-msg ${isMine ? 'chat-msg-mine' : 'chat-msg-other'}" data-msg-id="${msg.id}">
         ${header}
         <div class="chat-msg-row">
+          ${actionsBtn}
           <div class="chat-msg-content">
             ${textBubble}
             ${attachmentsHtml}
@@ -219,6 +249,103 @@ function autoResizeInput() {
   if (!input) return;
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
+
+// ── 메시지 수정/삭제 ───────────────────────────────────────────────────────
+function handleMessagesClick(e) {
+  const action = e.target.dataset?.action;
+  if (!action) return;
+
+  const msgEl = e.target.closest('.chat-msg');
+  const msgId = msgEl?.dataset.msgId;
+  if (!msgId) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (action === 'menu') {
+    // 다른 열린 메뉴들 닫기
+    document.querySelectorAll('.chat-msg-menu.active').forEach(m => {
+      if (m.dataset.msgId !== msgId) m.classList.remove('active');
+    });
+    const menu = msgEl.querySelector('.chat-msg-menu');
+    menu?.classList.toggle('active');
+  } else if (action === 'edit') {
+    _editingMessageId = msgId;
+    renderChatMessages();
+    // 포커스 & 커서 끝으로
+    setTimeout(() => {
+      const ta = document.querySelector(`.chat-msg[data-msg-id="${msgId}"] .chat-msg-edit-input`);
+      if (ta) {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      }
+    }, 0);
+  } else if (action === 'edit-cancel') {
+    _editingMessageId = null;
+    renderChatMessages();
+  } else if (action === 'edit-save') {
+    saveEditedMessage(msgId);
+  } else if (action === 'delete') {
+    confirmDeleteMessage(msgId);
+  }
+}
+
+async function saveEditedMessage(msgId) {
+  const ta = document.querySelector(`.chat-msg[data-msg-id="${msgId}"] .chat-msg-edit-input`);
+  if (!ta) return;
+  const newText = ta.value.trim();
+  if (!newText) {
+    showToast('내용을 입력해주세요.');
+    return;
+  }
+  if (newText.length > MSG_MAX_LEN) {
+    showToast(`메시지는 ${MSG_MAX_LEN}자 이하로 작성해주세요.`);
+    return;
+  }
+  const msg = state.chatMessages.find(m => m.id === msgId);
+  if (msg && msg.text === newText) {
+    _editingMessageId = null;
+    renderChatMessages();
+    return;
+  }
+  const tripId = state.currentTripId;
+  try {
+    await db.collection('trips').doc(tripId).collection('messages').doc(msgId).update({
+      text: newText,
+      editedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    _editingMessageId = null;
+  } catch (err) {
+    console.error(err);
+    showToast('메시지 수정에 실패했습니다.');
+  }
+}
+
+function confirmDeleteMessage(msgId) {
+  const msg = state.chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  if (!confirm('이 메시지를 삭제할까요?')) return;
+  deleteMessage(msgId, msg.attachments || []);
+}
+
+async function deleteMessage(msgId, attachments) {
+  const tripId = state.currentTripId;
+  try {
+    await db.collection('trips').doc(tripId).collection('messages').doc(msgId).delete();
+    // Storage 첨부파일도 삭제 (실패해도 메시지는 이미 삭제됨)
+    for (const att of attachments) {
+      try {
+        const ref = storage.refFromURL(att.url);
+        await ref.delete();
+      } catch (err) {
+        console.warn('첨부파일 삭제 실패:', err);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('메시지 삭제에 실패했습니다.');
+  }
 }
 
 function onFileSelected(files) {
@@ -315,6 +442,31 @@ export function initChatPanel() {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       sendMessage();
+    }
+  });
+
+  // 메시지 영역 클릭 이벤트 위임 (메뉴/수정/삭제)
+  const messagesEl = document.getElementById('chat-messages');
+  messagesEl?.addEventListener('click', handleMessagesClick);
+
+  // 편집 textarea 키보드 핸들러 (Enter=저장, Esc=취소)
+  messagesEl?.addEventListener('keydown', e => {
+    if (!e.target.classList?.contains('chat-msg-edit-input')) return;
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      const msgId = e.target.closest('.chat-msg')?.dataset.msgId;
+      if (msgId) saveEditedMessage(msgId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      _editingMessageId = null;
+      renderChatMessages();
+    }
+  });
+
+  // 다른 곳 클릭 시 열린 메뉴 닫기
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.chat-msg-actions')) {
+      document.querySelectorAll('.chat-msg-menu.active').forEach(m => m.classList.remove('active'));
     }
   });
 }
