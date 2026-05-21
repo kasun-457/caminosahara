@@ -154,22 +154,11 @@ function renderChatMessages() {
       }
     }).join('');
 
-    // 자기 메시지에만 액션 메뉴 버튼 표시
-    const actionsBtn = isMine ? `
-      <div class="chat-msg-actions">
-        <button type="button" class="chat-msg-menu-btn" data-action="menu" aria-label="메뉴">⋯</button>
-        <div class="chat-msg-menu" data-msg-id="${msg.id}">
-          ${msg.text ? '<button type="button" data-action="edit">수정</button>' : ''}
-          <button type="button" data-action="delete">삭제</button>
-        </div>
-      </div>` : '';
-
     return `
       ${dayDivider}
       <div class="chat-msg ${isMine ? 'chat-msg-mine' : 'chat-msg-other'}" data-msg-id="${msg.id}">
         ${header}
         <div class="chat-msg-row">
-          ${actionsBtn}
           <div class="chat-msg-content">
             ${textBubble}
             ${attachmentsHtml}
@@ -252,10 +241,11 @@ function autoResizeInput() {
 }
 
 // ── 메시지 수정/삭제 ───────────────────────────────────────────────────────
+
+// 편집 모드 내부 버튼 클릭 (저장/취소)
 function handleMessagesClick(e) {
   const action = e.target.dataset?.action;
   if (!action) return;
-
   const msgEl = e.target.closest('.chat-msg');
   const msgId = msgEl?.dataset.msgId;
   if (!msgId) return;
@@ -263,32 +253,76 @@ function handleMessagesClick(e) {
   e.preventDefault();
   e.stopPropagation();
 
-  if (action === 'menu') {
-    // 다른 열린 메뉴들 닫기
-    document.querySelectorAll('.chat-msg-menu.active').forEach(m => {
-      if (m.dataset.msgId !== msgId) m.classList.remove('active');
-    });
-    const menu = msgEl.querySelector('.chat-msg-menu');
-    menu?.classList.toggle('active');
-  } else if (action === 'edit') {
-    _editingMessageId = msgId;
-    renderChatMessages();
-    // 포커스 & 커서 끝으로
-    setTimeout(() => {
-      const ta = document.querySelector(`.chat-msg[data-msg-id="${msgId}"] .chat-msg-edit-input`);
-      if (ta) {
-        ta.focus();
-        ta.setSelectionRange(ta.value.length, ta.value.length);
-      }
-    }, 0);
-  } else if (action === 'edit-cancel') {
+  if (action === 'edit-cancel') {
     _editingMessageId = null;
     renderChatMessages();
   } else if (action === 'edit-save') {
     saveEditedMessage(msgId);
-  } else if (action === 'delete') {
-    confirmDeleteMessage(msgId);
   }
+}
+
+// 우클릭 컨텍스트 메뉴
+function handleMessagesContextMenu(e) {
+  const msgEl = e.target.closest('.chat-msg');
+  if (!msgEl) return;
+  if (!msgEl.classList.contains('chat-msg-mine')) return; // 자기 메시지만
+  if (_editingMessageId === msgEl.dataset.msgId) return;  // 편집 중엔 무시
+
+  e.preventDefault();
+  const msgId = msgEl.dataset.msgId;
+  const msg = state.chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+
+  showContextMenu(e.clientX, e.clientY, msgId, !!msg.text);
+}
+
+function showContextMenu(x, y, msgId, hasText) {
+  closeContextMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'chat-context-menu';
+  menu.dataset.msgId = msgId;
+  menu.innerHTML = `
+    ${hasText ? '<button type="button" data-action="edit">✏️ 수정</button>' : ''}
+    <button type="button" data-action="delete">🗑️ 삭제</button>
+  `;
+
+  // 일단 화면 밖에 두고 크기 측정 후 위치 조정 (뷰포트 넘침 방지)
+  menu.style.left = '0px';
+  menu.style.top = '0px';
+  menu.style.visibility = 'hidden';
+  document.body.appendChild(menu);
+
+  const rect = menu.getBoundingClientRect();
+  const maxX = window.innerWidth - rect.width - 8;
+  const maxY = window.innerHeight - rect.height - 8;
+  menu.style.left = Math.min(x, maxX) + 'px';
+  menu.style.top  = Math.min(y, maxY) + 'px';
+  menu.style.visibility = 'visible';
+
+  menu.addEventListener('click', e => {
+    const action = e.target.dataset?.action;
+    if (!action) return;
+    closeContextMenu();
+
+    if (action === 'edit') {
+      _editingMessageId = msgId;
+      renderChatMessages();
+      setTimeout(() => {
+        const ta = document.querySelector(`.chat-msg[data-msg-id="${msgId}"] .chat-msg-edit-input`);
+        if (ta) {
+          ta.focus();
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      }, 0);
+    } else if (action === 'delete') {
+      confirmDeleteMessage(msgId);
+    }
+  });
+}
+
+function closeContextMenu() {
+  document.querySelectorAll('.chat-context-menu').forEach(m => m.remove());
 }
 
 async function saveEditedMessage(msgId) {
@@ -445,9 +479,10 @@ export function initChatPanel() {
     }
   });
 
-  // 메시지 영역 클릭 이벤트 위임 (메뉴/수정/삭제)
+  // 메시지 영역 이벤트
   const messagesEl = document.getElementById('chat-messages');
   messagesEl?.addEventListener('click', handleMessagesClick);
+  messagesEl?.addEventListener('contextmenu', handleMessagesContextMenu);
 
   // 편집 textarea 키보드 핸들러 (Enter=저장, Esc=취소)
   messagesEl?.addEventListener('keydown', e => {
@@ -463,12 +498,14 @@ export function initChatPanel() {
     }
   });
 
-  // 다른 곳 클릭 시 열린 메뉴 닫기
+  // 컨텍스트 메뉴 외부 클릭 / 스크롤 / ESC 시 닫기
   document.addEventListener('click', e => {
-    if (!e.target.closest('.chat-msg-actions')) {
-      document.querySelectorAll('.chat-msg-menu.active').forEach(m => m.classList.remove('active'));
-    }
+    if (!e.target.closest('.chat-context-menu')) closeContextMenu();
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeContextMenu();
+  });
+  messagesEl?.addEventListener('scroll', closeContextMenu);
 
   // ── 드래그 & 드롭 파일 업로드 ─────────────────────────────────────
   const panel = document.getElementById('chat-panel');

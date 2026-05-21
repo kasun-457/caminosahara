@@ -3778,70 +3778,50 @@ main, header {
   opacity: 0.7;
 }
 
-.chat-msg-actions {
-  position: relative;
-  align-self: flex-end;
-  opacity: 0;
-  transition: opacity 0.15s;
+/* 자기 메시지: 우클릭으로 메뉴 열림을 시각적으로 암시 */
+.chat-msg-mine .chat-msg-bubble {
+  cursor: context-menu;
 }
 
-.chat-msg:hover .chat-msg-actions,
-.chat-msg-actions:focus-within {
-  opacity: 1;
-}
-
-.chat-msg-menu-btn {
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  font-size: 1rem;
-  line-height: 1;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s, color 0.15s;
-}
-
-.chat-msg-menu-btn:hover {
-  background: var(--surface3);
-  color: var(--text);
-}
-
-.chat-msg-menu {
-  display: none;
-  position: absolute;
-  bottom: 100%;
-  right: 0;
+/* 우클릭 컨텍스트 메뉴 */
+.chat-context-menu {
+  position: fixed;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  z-index: 10;
-  min-width: 90px;
-  padding: 0.25rem;
-}
-
-.chat-msg-menu.active {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  padding: 0.3rem;
   display: flex;
   flex-direction: column;
+  min-width: 130px;
+  z-index: 1000;
+  animation: chatCtxFadeIn 0.12s ease-out;
 }
 
-.chat-msg-menu button {
+@keyframes chatCtxFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.chat-context-menu button {
   background: transparent;
   border: none;
   color: var(--text);
-  font-size: 0.85rem;
-  padding: 0.4rem 0.7rem;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: background 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.chat-msg-menu button:hover { background: var(--surface3); }
-.chat-msg-menu button[data-action="delete"]:hover {
-  background: color-mix(in srgb, #e74c3c 20%, var(--surface3));
-  color: #ff7869;
+.chat-context-menu button:hover { background: var(--surface3); }
+.chat-context-menu button[data-action="delete"] { color: #ff7869; }
+.chat-context-menu button[data-action="delete"]:hover {
+  background: color-mix(in srgb, #e74c3c 22%, var(--surface3));
 }
 
 .chat-msg-edit-box {
