@@ -26,6 +26,7 @@ import {
 import { renderActivityFormFields } from './activity-fields.js';
 import { switchCalView, calNavigate } from './calendar.js';
 import { openBudgetModal } from './budget.js';
+import { openChatModal, closeChatModal, initChatModal } from './chat.js';
 
 // 이전 버전 localStorage 잔여 데이터 정리
 localStorage.removeItem('trips');
@@ -100,6 +101,7 @@ async function init() {
   document.getElementById('nav-back').addEventListener('click', goBack);
   document.getElementById('nav-logo').addEventListener('click', () => { if (state.currentTripId) goBack(); });
   document.getElementById('btn-members').addEventListener('click', () => openMembersModal(state.currentTripId));
+  document.getElementById('btn-chat').addEventListener('click', () => openChatModal(state.currentTripId));
   document.getElementById('btn-budget').addEventListener('click', () => openBudgetModal());
   document.getElementById('btn-settings').addEventListener('click', () => openSettingsModal(state.currentTripId));
 
@@ -109,6 +111,7 @@ async function init() {
   initJoinRoomModal();
   initNicknameModal();
   initTripCurrencyPicker();
+  initChatModal();
 
   // 폼
   document.getElementById('form-trip').addEventListener('submit', saveTripForm);
@@ -187,6 +190,11 @@ async function init() {
     if (e.key !== 'Escape') return;
     if (document.getElementById('detail-overlay').classList.contains('active')) {
       autoSaveAndClose(); return;
+    }
+    // 채팅은 닫을 때 구독 해제가 필요해서 먼저 분기
+    if (document.getElementById('modal-chat')?.classList.contains('active')) {
+      closeChatModal();
+      return;
     }
     ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account',
      'modal-invite', 'modal-join-room', 'modal-members', 'modal-nickname',

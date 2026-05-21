@@ -282,6 +282,23 @@
   </div>
 </div>
 
+<!-- 채팅 모달 -->
+<div class="modal-overlay" id="modal-chat">
+  <div class="modal modal-chat-shell">
+    <div class="modal-header">
+      <h2>💬 <span id="chat-trip-title"></span></h2>
+      <button class="modal-close" data-close="modal-chat">✕</button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" class="chat-input"
+                placeholder="메시지를 입력하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"
+                rows="1" maxlength="1000"></textarea>
+      <button class="btn-primary btn-sm" id="btn-chat-send">전송</button>
+    </div>
+  </div>
+</div>
+
 <!-- 설정 모달 -->
 <div class="modal-overlay" id="modal-settings">
   <div class="modal modal-sm">

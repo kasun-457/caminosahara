@@ -20,4 +20,6 @@ export const state = {
   detailContext: { activityId: null, date: null },
   pendingJoin: null, // { tripId, joinCode, source: 'url'|'paste' }
   inviteTripId: null,
+  unsubscribeChat: null,
+  chatMessages: [],
 };
