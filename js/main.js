@@ -27,7 +27,8 @@ import {
 } from './detail-panel.js';
 import { renderActivityFormFields } from './activity-fields.js';
 import { switchCalView, calNavigate } from './calendar.js';
-import { openBudgetModal } from './budget.js';
+import { openBudgetModal, renderBudgetInline } from './budget.js';
+import { renderMapView } from './map.js';
 import { initChatPanel, closeChatPanel, isChatPanelOpen } from './chat.js';
 
 // 이전 버전 localStorage 잔여 데이터 정리
@@ -103,8 +104,12 @@ async function init() {
   document.getElementById('nav-back').addEventListener('click', goBack);
   document.getElementById('nav-logo').addEventListener('click', () => { if (state.currentTripId) goBack(); });
   document.getElementById('btn-members').addEventListener('click', () => openMembersModal(state.currentTripId));
-  document.getElementById('btn-budget').addEventListener('click', () => openBudgetModal());
   document.getElementById('btn-settings').addEventListener('click', () => openSettingsModal(state.currentTripId));
+
+  // 메인 뷰 전환 탭 (일정 / 지도 / 가계부)
+  document.querySelectorAll('.main-view-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchMainView(tab.dataset.mainView));
+  });
 
   // 참여자 모달 내 초대 / 방 참여 / 통화 선택 초기화
   initMembersInviteEvents();
@@ -204,6 +209,42 @@ async function init() {
 
   // Auth 상태 감지 시작
   initAuthStateListener();
+}
+
+// 메인 뷰(일정/지도/가계부) 전환
+function switchMainView(view) {
+  document.querySelectorAll('.main-view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mainView === view);
+  });
+
+  const isSchedule = view === 'schedule';
+  const sticky   = document.getElementById('trip-sticky-bar');
+  const content  = document.getElementById('trip-content-row');
+  const calView  = document.getElementById('cal-view');
+  const mapView  = document.getElementById('map-view');
+  const budgetView = document.getElementById('budget-view');
+
+  // 일정 뷰: 기존 캘린더 상태 유지(list/week/all)
+  sticky.style.display  = isSchedule ? '' : 'none';
+  // 일정 뷰일 때만 list 또는 calendar 한쪽이 보이도록 — calendar.js가 관리
+  if (isSchedule) {
+    if (state.calView && state.calView !== 'list') {
+      content.style.display = 'none';
+      calView.style.display = '';
+    } else {
+      content.style.display = '';
+      calView.style.display = 'none';
+    }
+  } else {
+    content.style.display = 'none';
+    calView.style.display = 'none';
+  }
+
+  mapView.style.display    = view === 'map'    ? '' : 'none';
+  budgetView.style.display = view === 'budget' ? '' : 'none';
+
+  if (view === 'map')    renderMapView();
+  if (view === 'budget') renderBudgetInline();
 }
 
 init();

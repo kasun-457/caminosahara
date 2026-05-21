@@ -102,12 +102,19 @@ function sumByCategory(items) {
 export function openBudgetModal() {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   if (!trip) return;
-  renderBudgetModal(trip);
+  renderBudget(trip, document.getElementById('budget-body'));
   openModal('modal-budget');
 }
 
-function renderBudgetModal(trip) {
-  const body = document.getElementById('budget-body');
+// 인라인 뷰(가계부 탭)에서 호출
+export function renderBudgetInline() {
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (!trip) return;
+  renderBudget(trip, document.getElementById('budget-body-inline'));
+}
+
+function renderBudget(trip, body) {
+  if (!body) return;
   const items = collectExpenses(trip);
 
   if (items.length === 0) {

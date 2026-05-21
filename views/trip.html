@@ -8,13 +8,19 @@
       </div>
       <div class="trip-hero-actions">
         <button class="btn-outline btn-sm" id="btn-members">👥 참여자</button>
-        <button class="btn-outline btn-sm" id="btn-budget">💰 가계부</button>
         <button class="btn-outline btn-sm" id="btn-settings">⚙ 설정</button>
       </div>
     </div>
 
+    <!-- 메인 뷰 전환 탭 (일정 / 지도 / 가계부) -->
+    <div class="main-view-tabs" id="main-view-tabs">
+      <button type="button" class="main-view-tab active" data-main-view="schedule">📅 일정</button>
+      <button type="button" class="main-view-tab" data-main-view="map">🗺 지도</button>
+      <button type="button" class="main-view-tab" data-main-view="budget">💰 가계부</button>
+    </div>
+
     <!-- sticky: 뷰 전환 툴바 + 날짜 탭 -->
-    <div class="trip-sticky-bar">
+    <div class="trip-sticky-bar" id="trip-sticky-bar">
       <div class="cal-toolbar" id="cal-toolbar">
         <div class="cal-nav-group" id="cal-toolbar-nav" style="display:none">
           <button type="button" class="cal-nav-btn" id="cal-prev-btn">‹</button>
@@ -41,6 +47,17 @@
 
     <!-- 캘린더 그리드 뷰 -->
     <div id="cal-view" style="display:none"></div>
+
+    <!-- 지도 뷰 -->
+    <div id="map-view" class="map-view" style="display:none">
+      <div id="map-canvas" class="map-canvas"></div>
+      <div id="map-legend" class="map-legend"></div>
+    </div>
+
+    <!-- 가계부 인라인 뷰 -->
+    <div id="budget-view" class="budget-view" style="display:none">
+      <div id="budget-body-inline" class="budget-body"></div>
+    </div>
 
     <!-- 채팅 토글 FAB (우측 하단 고정) -->
     <button id="btn-chat-fab" class="chat-fab" type="button" aria-label="채팅 열기/닫기">

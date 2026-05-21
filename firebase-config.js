@@ -46,3 +46,23 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  Google Maps JavaScript API Key
+//  ── 발급 방법 ────────────────────────────────────────────────────────────────
+//  1. https://console.cloud.google.com 접속 → 프로젝트 선택(또는 새로 만들기)
+//  2. 좌측 메뉴 → "API 및 서비스" → "라이브러리"
+//     → 아래 3가지 API "사용 설정":
+//        - Maps JavaScript API
+//        - Geocoding API
+//        - Places API (선택)
+//  3. "사용자 인증 정보" → "사용자 인증 정보 만들기" → "API 키"
+//  4. 생성된 키를 "키 제한"으로 보호:
+//     - 애플리케이션 제한: HTTP 리퍼러
+//        → 허용 사이트에 본인 도메인 추가
+//          (예: localhost:*/* , https://yourdomain.com/*)
+//     - API 제한: Maps JavaScript API, Geocoding API 만 허용
+//  5. 결제 계정 등록 필수(무료 한도 월 10,000회 로드 안에선 과금 없음)
+//  6. 예산 알림 설정 권장: 결제 → 예산 및 알림 → 월 $1 알림 추가
+// ══════════════════════════════════════════════════════════════════════════════
+window.GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
