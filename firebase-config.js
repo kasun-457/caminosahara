@@ -65,4 +65,4 @@ firebase.initializeApp(firebaseConfig);
 //  5. 결제 계정 등록 필수(무료 한도 월 10,000회 로드 안에선 과금 없음)
 //  6. 예산 알림 설정 권장: 결제 → 예산 및 알림 → 월 $1 알림 추가
 // ══════════════════════════════════════════════════════════════════════════════
-window.GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
+window.GOOGLE_MAPS_API_KEY = "AIzaSyDnB2bxMKPKMxN3AvUZQuhLhOZJpjoUIU4";
