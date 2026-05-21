@@ -18,6 +18,7 @@ const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword',
 let _pendingAttachments = []; // { file, type }
 let _editingMessageId = null; // 현재 편집 중인 메시지 ID
 let _markReadTimer = null;    // 읽음 처리 디바운스용
+let _contextMenuJustOpened = false; // 우클릭 직후 click 이벤트로 메뉴가 즉시 닫히는 것 방지
 
 // ── 읽음 상태: 현재 사용자의 lastReadAt 을 trip.readState.{uid} 에 기록 ──
 async function markChatRead() {
@@ -420,6 +421,7 @@ function handleMessagesContextMenu(e) {
   if (_editingMessageId === msgEl.dataset.msgId) return;  // 편집 중엔 무시
 
   e.preventDefault();
+  e.stopPropagation();
   const msgId = msgEl.dataset.msgId;
   const msg = state.chatMessages.find(m => m.id === msgId);
   if (!msg) return;
@@ -461,6 +463,7 @@ function showContextMenu(x, y, msgId, hasText, isMine, isPinned) {
   menu.style.left = Math.min(x, maxX) + 'px';
   menu.style.top  = Math.min(y, maxY) + 'px';
   menu.style.visibility = 'visible';
+  _contextMenuJustOpened = true;
 
   menu.addEventListener('click', e => {
     const action = e.target.dataset?.action;
@@ -737,7 +740,9 @@ export function initChatPanel() {
   });
 
   // 컨텍스트 메뉴 외부 클릭 / 스크롤 / ESC 시 닫기
-  document.addEventListener('click', e => {
+  // mousedown 사용: 우클릭 직후 일부 브라우저가 click을 발생시켜 메뉴가 즉시 닫히는 문제 방지
+  document.addEventListener('mousedown', e => {
+    if (_contextMenuJustOpened) { _contextMenuJustOpened = false; return; }
     if (!e.target.closest('.chat-context-menu')) closeContextMenu();
   });
   document.addEventListener('keydown', e => {
