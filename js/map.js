@@ -1,9 +1,9 @@
 import { state } from './state.js';
 import { db } from './firebase.js';
 import { CATEGORIES } from './constants.js';
-import { getDays, fmtDate, escapeHtml, showToast } from './utils.js';
+import { getDays, fmtDate, escapeHtml } from './utils.js';
 
-// Day 색상 팔레트 (Day별 마커/동선 구분)
+// Day 색상 팔레트
 const DAY_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
   '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b',
@@ -11,12 +11,12 @@ const DAY_COLORS = [
 
 let _mapsLoading = null;
 let _mapInstance = null;
-let _markers = [];
+let _markers = [];     // { actId, marker, coord, dayIndex, color, act }
 let _polylines = [];
 let _infoWindow = null;
-let _geoCache = new Map(); // "query" → {lat,lng}
+let _geoCache = new Map();
 
-// ── Google Maps JS API 동적 로드 ─────────────────────────────────────────────
+// ── Google Maps 동적 로드 ────────────────────────────────────────────────────
 function loadGoogleMaps() {
   if (window.google?.maps) return Promise.resolve(window.google);
   if (_mapsLoading) return _mapsLoading;
@@ -29,36 +29,29 @@ function loadGoogleMaps() {
     window[cb] = () => { resolve(window.google); delete window[cb]; };
     const s = document.createElement('script');
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=geocoding,marker&callback=${cb}&loading=async`;
-    s.async = true;
-    s.defer = true;
+    s.async = true; s.defer = true;
     s.onerror = () => { reject(new Error('LOAD_FAIL')); delete window[cb]; };
     document.head.appendChild(s);
   });
   return _mapsLoading;
 }
 
-// ── activity 에서 지도용 쿼리 문자열 추출 ────────────────────────────────────
 function activityToQuery(act) {
   const d = act.details || {};
   if (d.address) return d.address;
-  if (d.toLocation) return d.toLocation;   // 교통의 도착지를 대표 좌표로
+  if (d.toLocation) return d.toLocation;
   if (d.fromLocation) return d.fromLocation;
   return null;
 }
 
-// ── 좌표 조회: 활동 자체 캐시 → 메모리 캐시 → trip 캐시 → Geocoding ──────────
 async function resolveCoord(trip, act, query, geocoder) {
-  // 1. 활동에 좌표가 이미 저장돼 있으면 사용
   if (act.details?._coord?.lat) return act.details._coord;
-  // 2. 메모리 캐시
   if (_geoCache.has(query)) return _geoCache.get(query);
-  // 3. trip-level 캐시(_geoCache 필드)
   const tripCache = trip._geoCache || {};
   if (tripCache[query]) {
     _geoCache.set(query, tripCache[query]);
     return tripCache[query];
   }
-  // 4. Geocoding API 호출
   try {
     const res = await new Promise((resolve, reject) => {
       geocoder.geocode({ address: query }, (results, status) => {
@@ -68,7 +61,6 @@ async function resolveCoord(trip, act, query, geocoder) {
     });
     const coord = { lat: res.lat(), lng: res.lng() };
     _geoCache.set(query, coord);
-    // Firestore 에 캐시 저장(중복 호출 방지)
     saveGeoCache(trip.id, query, coord).catch(() => {});
     return coord;
   } catch (err) {
@@ -80,10 +72,99 @@ async function resolveCoord(trip, act, query, geocoder) {
 async function saveGeoCache(tripId, query, coord) {
   try {
     await db.collection('trips').doc(tripId).set(
-      { _geoCache: { [query]: coord } },
-      { merge: true }
+      { _geoCache: { [query]: coord } }, { merge: true }
     );
   } catch (_) {}
+}
+
+// ── 우측 일정 패널 HTML 생성 ────────────────────────────────────────────────
+function buildSidePaneHTML(trip, mappedActIds) {
+  const days = getDays(trip.startDate, trip.endDate);
+  let html = `<div class="map-side-header">
+    <h3>전체 일정</h3>
+    <span class="map-side-hint">📍 지도와 클릭 연동</span>
+  </div>`;
+
+  days.forEach((date, i) => {
+    const dayData = trip.days.find(d => d.date === date);
+    const acts = (dayData?.activities || []).slice().sort((a, b) =>
+      (a.time || '').localeCompare(b.time || '')
+    );
+    if (!acts.length) return;
+    const color = DAY_COLORS[i % DAY_COLORS.length];
+
+    html += `<div class="map-day-block">
+      <div class="map-day-header" style="--day-color:${color}">
+        <span class="map-day-dot"></span>
+        <span class="map-day-num">Day ${i + 1}</span>
+        <span class="map-day-date">${fmtDate(date)}</span>
+      </div>`;
+
+    acts.forEach(act => {
+      const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
+      const d = act.details || {};
+      const place = d.address || d.toLocation || d.fromLocation || '';
+      const hasMarker = mappedActIds.has(act.id);
+
+      const priceLine = d.price ? `<div class="map-act-meta">💰 ${escapeHtml(d.price)}</div>` : '';
+      const placeLine = place ? `<div class="map-act-meta">📍 ${escapeHtml(place)}</div>` : '';
+      const notesLine = act.notes ? `<div class="map-act-meta map-act-notes">${escapeHtml(act.notes)}</div>` : '';
+
+      html += `<div class="map-act-item${hasMarker ? ' clickable' : ' no-marker'}" data-act-id="${act.id}">
+        <div class="map-act-time">${act.time || '—'}</div>
+        <div class="map-act-body">
+          <div class="map-act-head">
+            <span class="map-act-cat" style="color:${cat.color}">${cat.icon} ${act.category}</span>
+            <span class="map-act-title">${escapeHtml(act.title)}</span>
+            ${hasMarker ? '<span class="map-act-pin">📍</span>' : ''}
+          </div>
+          ${placeLine}${priceLine}${notesLine}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  return html || `<div class="map-side-empty">일정이 없습니다.</div>`;
+}
+
+// ── 우측 패널 ↔ 지도 양방향 연동 ────────────────────────────────────────────
+function bindSideToMap(side) {
+  side.querySelectorAll('.map-act-item.clickable').forEach(el => {
+    el.addEventListener('click', () => {
+      const actId = el.dataset.actId;
+      const entry = _markers.find(m => m.actId === actId);
+      if (!entry) return;
+      _mapInstance.panTo(entry.coord);
+      if (_mapInstance.getZoom() < 13) _mapInstance.setZoom(14);
+      openMarkerInfo(entry);
+      highlightSideItem(actId, false); // 스크롤은 안 함(이미 그곳을 클릭함)
+    });
+  });
+}
+
+function highlightSideItem(actId, scroll = true) {
+  const side = document.getElementById('map-side-pane');
+  side.querySelectorAll('.map-act-item.active').forEach(e => e.classList.remove('active'));
+  const el = side.querySelector(`.map-act-item[data-act-id="${actId}"]`);
+  if (!el) return;
+  el.classList.add('active');
+  if (scroll) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function openMarkerInfo(entry) {
+  const { marker, act, dayIndex, color } = entry;
+  const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
+  const q = activityToQuery(act) || '';
+  _infoWindow.setContent(`
+    <div style="font-family:inherit;min-width:180px;max-width:260px;color:#222">
+      <div style="font-size:12px;color:${color};font-weight:600">Day ${dayIndex + 1} · ${act.time || '시간 미정'}</div>
+      <div style="font-weight:600;margin:2px 0">${escapeHtml(act.title)}</div>
+      <div style="font-size:12px;color:#666">${cat.icon} ${act.category}</div>
+      <div style="font-size:11px;color:#999;margin-top:4px">${escapeHtml(q)}</div>
+    </div>`);
+  _infoWindow.open({ map: _mapInstance, anchor: marker });
 }
 
 // ── 메인 렌더 ────────────────────────────────────────────────────────────────
@@ -93,19 +174,19 @@ export async function renderMapView() {
 
   const canvas = document.getElementById('map-canvas');
   const legend = document.getElementById('map-legend');
+  const side   = document.getElementById('map-side-pane');
   canvas.innerHTML = `<div class="map-loading">지도를 불러오는 중…</div>`;
   legend.innerHTML = '';
+  side.innerHTML   = '';
 
   let google;
-  try {
-    google = await loadGoogleMaps();
-  } catch (err) {
+  try { google = await loadGoogleMaps(); }
+  catch (err) {
     if (err.message === 'NO_API_KEY') {
       canvas.innerHTML = `
         <div class="map-error">
           <p><strong>Google Maps API 키가 설정되지 않았습니다.</strong></p>
-          <p><code>firebase-config.js</code> 파일을 열어 <code>window.GOOGLE_MAPS_API_KEY</code> 값을 발급받은 키로 교체해주세요.</p>
-          <p>발급 방법은 같은 파일의 주석을 참고하세요.</p>
+          <p><code>firebase-config.js</code> 의 <code>window.GOOGLE_MAPS_API_KEY</code> 값을 설정해주세요.</p>
         </div>`;
     } else {
       canvas.innerHTML = `<div class="map-error"><p>지도를 불러오지 못했습니다.</p></div>`;
@@ -113,10 +194,9 @@ export async function renderMapView() {
     return;
   }
 
-  // 캔버스 비우고 지도 생성
   canvas.innerHTML = '';
   _mapInstance = new google.maps.Map(canvas, {
-    center: { lat: 36.5, lng: 127.8 }, // 임시 중심(이후 fitBounds로 덮어씀)
+    center: { lat: 36.5, lng: 127.8 },
     zoom: 6,
     mapTypeControl: false,
     streetViewControl: false,
@@ -124,21 +204,19 @@ export async function renderMapView() {
     styles: darkMapStyle,
   });
   _infoWindow = new google.maps.InfoWindow();
-  _markers.forEach(m => m.setMap(null)); _markers = [];
+  _markers.forEach(m => m.marker.setMap(null)); _markers = [];
   _polylines.forEach(p => p.setMap(null)); _polylines = [];
 
   const geocoder = new google.maps.Geocoder();
   const days = getDays(trip.startDate, trip.endDate);
   const bounds = new google.maps.LatLngBounds();
-  let anyPlaced = false;
   const legendItems = [];
+  let anyPlaced = false;
 
-  // Day별 순서대로 처리
   for (let i = 0; i < days.length; i++) {
     const date = days[i];
     const dayData = trip.days.find(d => d.date === date);
     if (!dayData?.activities?.length) continue;
-
     const color = DAY_COLORS[i % DAY_COLORS.length];
     const sorted = [...dayData.activities].sort((a, b) =>
       (a.time || '').localeCompare(b.time || '')
@@ -153,7 +231,6 @@ export async function renderMapView() {
       const coord = await resolveCoord(trip, act, q, geocoder);
       if (!coord) continue;
 
-      const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
       const marker = new google.maps.Marker({
         position: coord,
         map: _mapInstance,
@@ -161,45 +238,33 @@ export async function renderMapView() {
         label: { text: String(i + 1), color: '#fff', fontWeight: '700', fontSize: '12px' },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: '#fff',
-          strokeWeight: 2,
+          fillColor: color, fillOpacity: 1,
+          strokeColor: '#fff', strokeWeight: 2,
           scale: 12,
         },
       });
+      const entry = { actId: act.id, marker, coord, dayIndex: i, color, act };
       marker.addListener('click', () => {
-        _infoWindow.setContent(`
-          <div style="font-family:inherit;min-width:180px;color:#222">
-            <div style="font-size:12px;color:${color};font-weight:600">Day ${i + 1} · ${act.time || '시간 미정'}</div>
-            <div style="font-weight:600;margin:2px 0">${escapeHtml(act.title)}</div>
-            <div style="font-size:12px;color:#666">${cat.icon} ${act.category}</div>
-            <div style="font-size:11px;color:#999;margin-top:4px">${escapeHtml(q)}</div>
-          </div>`);
-        _infoWindow.open({ map: _mapInstance, anchor: marker });
+        openMarkerInfo(entry);
+        highlightSideItem(act.id, true);
       });
-      _markers.push(marker);
+      _markers.push(entry);
       bounds.extend(coord);
       dayPath.push(coord);
       placedInDay++;
       anyPlaced = true;
     }
 
-    // Day별 동선(polyline)
     if (dayPath.length >= 2) {
-      const pl = new google.maps.Polyline({
-        path: dayPath,
-        geodesic: true,
-        strokeColor: color,
-        strokeOpacity: 0.85,
-        strokeWeight: 3,
+      _polylines.push(new google.maps.Polyline({
+        path: dayPath, geodesic: true,
+        strokeColor: color, strokeOpacity: 0.85, strokeWeight: 3,
         map: _mapInstance,
         icons: [{
           icon: { path: google.maps.SymbolPath.FORWARD_OPEN_ARROW, scale: 2.5 },
           offset: '50%',
         }],
-      });
-      _polylines.push(pl);
+      }));
     }
 
     if (placedInDay > 0) {
@@ -207,17 +272,21 @@ export async function renderMapView() {
         <div class="map-legend-item">
           <span class="map-legend-dot" style="background:${color}"></span>
           <span class="map-legend-label">Day ${i + 1}</span>
-          <span class="map-legend-date">${fmtDate(date)}</span>
           <span class="map-legend-count">· ${placedInDay}곳</span>
         </div>`);
     }
   }
 
+  // 우측 패널은 항상 렌더 (지도에 안 찍힌 일정도 목록에 포함)
+  const mappedIds = new Set(_markers.map(m => m.actId));
+  side.innerHTML = buildSidePaneHTML(trip, mappedIds);
+  bindSideToMap(side);
+
   if (!anyPlaced) {
     canvas.innerHTML = `
       <div class="map-error">
         <p><strong>지도에 표시할 장소가 없습니다.</strong></p>
-        <p>일정의 상세에서 <strong>주소</strong> 또는 <strong>출발/도착</strong> 위치를 입력하면 자동으로 표시됩니다.</p>
+        <p>일정 상세에 <strong>주소</strong> 또는 <strong>출발/도착 위치</strong>를 입력하면 자동으로 표시됩니다.</p>
       </div>`;
     return;
   }
@@ -226,7 +295,6 @@ export async function renderMapView() {
   _mapInstance.fitBounds(bounds, 60);
 }
 
-// 다크 테마(앱과 어울리는 스타일)
 const darkMapStyle = [
   { elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#1f2937' }] },

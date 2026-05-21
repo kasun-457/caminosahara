@@ -50,8 +50,13 @@
 
     <!-- 지도 뷰 -->
     <div id="map-view" class="map-view" style="display:none">
-      <div id="map-canvas" class="map-canvas"></div>
-      <div id="map-legend" class="map-legend"></div>
+      <div class="map-view-grid">
+        <div class="map-pane">
+          <div id="map-canvas" class="map-canvas"></div>
+          <div id="map-legend" class="map-legend"></div>
+        </div>
+        <aside id="map-side-pane" class="map-side-pane"></aside>
+      </div>
     </div>
 
     <!-- 가계부 인라인 뷰 -->

@@ -16,6 +16,43 @@ const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword',
 
 let _pendingAttachments = []; // { file, type }
 let _editingMessageId = null; // 현재 편집 중인 메시지 ID
+let _markReadTimer = null;    // 읽음 처리 디바운스용
+
+// ── 읽음 상태: 현재 사용자의 lastReadAt 을 trip.readState.{uid} 에 기록 ──
+async function markChatRead() {
+  const tripId = state.currentTripId;
+  const uid    = state.currentUser?.uid;
+  if (!tripId || !uid) return;
+  if (!isChatPanelOpen()) return;
+  try {
+    await db.collection('trips').doc(tripId).set({
+      readState: { [uid]: firebase.firestore.FieldValue.serverTimestamp() },
+    }, { merge: true });
+  } catch (err) {
+    console.warn('읽음 상태 갱신 실패:', err);
+  }
+}
+
+function scheduleMarkRead() {
+  clearTimeout(_markReadTimer);
+  _markReadTimer = setTimeout(markChatRead, 400);
+}
+
+// 메시지 1건의 안 읽은 인원 수 (보낸 사람 제외)
+function unreadCountFor(msg, trip) {
+  if (!trip || !msg.createdAt?.toMillis) return 0;
+  const msgMs = msg.createdAt.toMillis();
+  const readState = trip.readState || {};
+  const members = trip.memberIds || [];
+  let unread = 0;
+  for (const uid of members) {
+    if (uid === msg.senderUid) continue; // 보낸 사람은 카운트 안 함
+    const ts = readState[uid];
+    const readMs = ts?.toMillis ? ts.toMillis() : 0;
+    if (readMs < msgMs) unread++;
+  }
+  return unread;
+}
 
 // ── 채팅 패널 열기/닫기/토글 ────────────────────────────────────────────────
 function openChatPanel() {
@@ -34,10 +71,12 @@ function openChatPanel() {
   document.body.classList.add('chat-open');
 
   subscribeToChat(tripId);
+  scheduleMarkRead(); // 열자마자 읽음 처리
   setTimeout(() => document.getElementById('chat-input')?.focus(), 200);
 }
 
 export function closeChatPanel() {
+  closeImageViewer();
   const panel = document.getElementById('chat-panel');
   const fab   = document.getElementById('btn-chat-fab');
   panel?.classList.remove('active');
@@ -68,6 +107,8 @@ function subscribeToChat(tripId) {
     .onSnapshot(snap => {
       state.chatMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderChatMessages();
+      // 새 메시지가 도착했고 패널이 열려있으면 자동으로 읽음 처리
+      scheduleMarkRead();
     }, err => {
       console.error('채팅 구독 오류:', err);
       showToast('채팅을 불러오지 못했습니다.');
@@ -89,6 +130,7 @@ function renderChatMessages() {
   const me   = state.currentUser?.uid;
   const trip = state.trips.find(t => t.id === state.currentTripId);
   const profiles = trip?.memberProfiles || {};
+  const totalMembers = (trip?.memberIds || []).length;
 
   if (state.chatMessages.length === 0) {
     list.innerHTML = `<div class="chat-empty">아직 메시지가 없어요.<br>첫 메시지를 보내보세요!</div>`;
@@ -144,14 +186,22 @@ function renderChatMessages() {
       ? `<div class="chat-msg-bubble">${escapeHtml(msg.text)}${editedLabel}</div>`
       : '';
 
-    // 첨부파일 부분
+    // 첨부파일 부분 — 이미지에는 msg-id + 인덱스를 달아 뷰어가 메시지 내 이미지를 순환할 수 있게 함
+    let imgIdx = 0;
     const attachmentsHtml = (msg.attachments || []).map(att => {
       if (att.type === 'image') {
-        return `<div class="chat-attachment-img"><img src="${escapeHtml(att.url)}" alt="${escapeHtml(att.name)}" loading="lazy"></div>`;
+        const idx = imgIdx++;
+        return `<div class="chat-attachment-img"><img src="${escapeHtml(att.url)}" alt="${escapeHtml(att.name)}" loading="lazy" data-img-msg-id="${msg.id}" data-img-idx="${idx}"></div>`;
       } else {
         return `<div class="chat-attachment-file"><a href="${escapeHtml(att.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(att.name)}</a></div>`;
       }
     }).join('');
+
+    // 안 읽은 인원 수 (보낸 사람 제외). 2인 이상 방에서만 표시.
+    const unread = totalMembers > 1 ? unreadCountFor(msg, trip) : 0;
+    const unreadBadge = unread > 0
+      ? `<span class="chat-msg-unread" title="안 읽은 인원">${unread}</span>`
+      : '';
 
     return `
       ${dayDivider}
@@ -162,7 +212,10 @@ function renderChatMessages() {
             ${textBubble}
             ${attachmentsHtml}
           </div>
-          <span class="chat-msg-time">${timeLabel}</span>
+          <div class="chat-msg-meta">
+            ${unreadBadge}
+            <span class="chat-msg-time">${timeLabel}</span>
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -241,8 +294,16 @@ function autoResizeInput() {
 
 // ── 메시지 수정/삭제 ───────────────────────────────────────────────────────
 
-// 편집 모드 내부 버튼 클릭 (저장/취소)
+// 편집 모드 내부 버튼 클릭 (저장/취소) + 이미지 뷰어 열기
 function handleMessagesClick(e) {
+  // 이미지 클릭 → 뷰어 열기
+  const img = e.target.closest('img[data-img-msg-id]');
+  if (img) {
+    e.preventDefault();
+    openImageViewer(img.dataset.imgMsgId, parseInt(img.dataset.imgIdx, 10) || 0);
+    return;
+  }
+
   const action = e.target.dataset?.action;
   if (!action) return;
   const msgEl = e.target.closest('.chat-msg');
@@ -258,6 +319,78 @@ function handleMessagesClick(e) {
   } else if (action === 'edit-save') {
     saveEditedMessage(msgId);
   }
+}
+
+// ── 이미지 뷰어 ────────────────────────────────────────────────────────────
+let _viewerState = null; // { images: [{url,name}], index }
+
+function ensureImageViewer() {
+  let v = document.getElementById('chat-img-viewer');
+  if (v) return v;
+  v = document.createElement('div');
+  v.id = 'chat-img-viewer';
+  v.className = 'chat-img-viewer';
+  v.innerHTML = `
+    <button type="button" class="civ-btn civ-close" aria-label="닫기">✕</button>
+    <button type="button" class="civ-btn civ-prev" aria-label="이전">‹</button>
+    <button type="button" class="civ-btn civ-next" aria-label="다음">›</button>
+    <a class="civ-btn civ-download" target="_blank" rel="noopener" download aria-label="다운로드" title="새 탭에서 열기 / 다운로드">⤓</a>
+    <div class="civ-stage"><img class="civ-img" alt=""></div>
+    <div class="civ-caption"><span class="civ-name"></span><span class="civ-count"></span></div>
+  `;
+  document.body.appendChild(v);
+
+  v.addEventListener('click', e => {
+    if (e.target.classList.contains('civ-close') || e.target === v) closeImageViewer();
+    else if (e.target.classList.contains('civ-prev')) navViewer(-1);
+    else if (e.target.classList.contains('civ-next')) navViewer(1);
+  });
+  return v;
+}
+
+function openImageViewer(msgId, index) {
+  const msg = state.chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  const images = (msg.attachments || []).filter(a => a.type === 'image');
+  if (images.length === 0) return;
+  _viewerState = { images, index: Math.max(0, Math.min(index, images.length - 1)) };
+  const v = ensureImageViewer();
+  v.classList.add('active');
+  document.body.classList.add('chat-img-viewer-open');
+  renderViewer();
+}
+
+function renderViewer() {
+  if (!_viewerState) return;
+  const v = document.getElementById('chat-img-viewer');
+  if (!v) return;
+  const { images, index } = _viewerState;
+  const cur = images[index];
+  v.querySelector('.civ-img').src = cur.url;
+  v.querySelector('.civ-img').alt = cur.name || '';
+  v.querySelector('.civ-name').textContent = cur.name || '';
+  v.querySelector('.civ-count').textContent = images.length > 1 ? ` (${index + 1} / ${images.length})` : '';
+  v.querySelector('.civ-download').href = cur.url;
+  v.querySelector('.civ-prev').style.display = images.length > 1 ? '' : 'none';
+  v.querySelector('.civ-next').style.display = images.length > 1 ? '' : 'none';
+}
+
+function navViewer(delta) {
+  if (!_viewerState) return;
+  const n = _viewerState.images.length;
+  _viewerState.index = (_viewerState.index + delta + n) % n;
+  renderViewer();
+}
+
+function closeImageViewer() {
+  const v = document.getElementById('chat-img-viewer');
+  v?.classList.remove('active');
+  document.body.classList.remove('chat-img-viewer-open');
+  _viewerState = null;
+}
+
+function isImageViewerOpen() {
+  return !!_viewerState;
 }
 
 // 우클릭 컨텍스트 메뉴
@@ -505,6 +638,19 @@ export function initChatPanel() {
     if (e.key === 'Escape') closeContextMenu();
   });
   messagesEl?.addEventListener('scroll', closeContextMenu);
+
+  // 다른 멤버가 채팅을 읽으면 trip 문서가 갱신됨 → 채팅 재렌더로 안 읽은 수 반영
+  document.addEventListener('trips-updated', () => {
+    if (isChatPanelOpen()) renderChatMessages();
+  });
+
+  // 이미지 뷰어 키보드 (ESC 닫기, ←/→ 이동) — capture로 다른 ESC 핸들러보다 먼저 처리
+  document.addEventListener('keydown', e => {
+    if (!isImageViewerOpen()) return;
+    if (e.key === 'Escape')      { e.stopPropagation(); closeImageViewer(); }
+    else if (e.key === 'ArrowLeft')  { navViewer(-1); }
+    else if (e.key === 'ArrowRight') { navViewer(1); }
+  }, true);
 
   // ── 드래그 & 드롭 파일 업로드 ─────────────────────────────────────
   const panel = document.getElementById('chat-panel');

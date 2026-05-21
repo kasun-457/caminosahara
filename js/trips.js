@@ -149,6 +149,9 @@ export function subscribeToTrips() {
           goBack();
         }
       }
+
+      // 채팅 모듈 등 다른 모듈이 트립 데이터 변경(읽음 상태 등)에 반응할 수 있도록
+      document.dispatchEvent(new CustomEvent('trips-updated'));
     }, err => console.error('Firestore 오류:', err));
 }
 
