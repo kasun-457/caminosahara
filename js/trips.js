@@ -372,7 +372,7 @@ export function memberDisplayName(trip, uid) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  여행 열기 / 나가기
 // ══════════════════════════════════════════════════════════════════════════════
-function openTrip(tripId) {
+export function openTrip(tripId) {
   state.currentTripId = tripId;
   window.history.replaceState(null, '', '#' + tripId);
   state.currentDayIndex = 0;

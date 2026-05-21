@@ -3725,11 +3725,140 @@ main, header {
 
 /* 안 읽은 인원 수 — KakaoTalk 스타일 노란 숫자 */
 .chat-msg-unread {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #fde047;            /* 노란색 */
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: #fde047;
   font-family: 'DM Mono', monospace;
   letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+/* ── 채팅 공지 (상단 고정) ─────────────────────────────────────────────────── */
+.chat-notice {
+  background: color-mix(in srgb, var(--accent, #d4ff4d) 12%, var(--surface, #1c1f26));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #d4ff4d) 35%, var(--border, rgba(255,255,255,0.08)));
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+.chat-notice-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+.chat-notice-icon {
+  font-size: 0.9rem;
+}
+.chat-notice-sender {
+  color: var(--text, #e5e7eb);
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-notice-toggle,
+.chat-notice-unpin {
+  background: transparent;
+  border: none;
+  color: var(--text-dim, #9ca3af);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.chat-notice-toggle:hover,
+.chat-notice-unpin:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text, #e5e7eb);
+}
+.chat-notice-body {
+  margin-top: 6px;
+  padding-left: 22px;
+  font-size: 0.85rem;
+  color: var(--text, #e5e7eb);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+  line-height: 1.45;
+}
+.chat-notice.collapsed .chat-notice-body { display: none; }
+
+/* ── 글로벌 새 채팅 알림 팝업 ──────────────────────────────────────────────── */
+.chat-notif-popup {
+  position: fixed;
+  right: 24px;
+  bottom: 96px;            /* 채팅 FAB(보통 bottom:24px, 높이 56px) 바로 위 */
+  z-index: 9500;
+  min-width: 240px;
+  max-width: 340px;
+  background: var(--surface2, #1f2230);
+  color: var(--text, #e5e7eb);
+  border: 1px solid color-mix(in srgb, var(--accent, #d4ff4d) 35%, var(--border, rgba(255,255,255,0.08)));
+  border-radius: 12px;
+  padding: 10px 36px 10px 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.chat-notif-popup.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.chat-notif-popup:hover {
+  background: color-mix(in srgb, var(--accent, #d4ff4d) 8%, var(--surface2, #1f2230));
+}
+.chat-notif-trip {
+  font-size: 0.72rem;
+  color: var(--accent, #d4ff4d);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.chat-notif-row {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.88rem;
+  overflow: hidden;
+}
+.chat-notif-sender {
+  font-weight: 600;
+  flex-shrink: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-notif-text {
+  color: var(--text-dim, #cbd5e1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.chat-notif-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim, #9ca3af);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.chat-notif-close:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text, #e5e7eb);
 }
 
 .chat-input-row {

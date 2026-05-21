@@ -75,6 +75,17 @@
         <h3>💬 <span id="chat-trip-title"></span></h3>
         <button class="chat-panel-close" id="btn-chat-close" aria-label="채팅 닫기">✕</button>
       </div>
+      <!-- 공지 (우클릭 → 공지로 등록) -->
+      <div id="chat-notice" class="chat-notice" style="display:none">
+        <div class="chat-notice-head">
+          <span class="chat-notice-icon">📌</span>
+          <span class="chat-notice-sender" id="chat-notice-sender"></span>
+          <button type="button" class="chat-notice-toggle" id="chat-notice-toggle" aria-label="접기/펴기">▾</button>
+          <button type="button" class="chat-notice-unpin" id="chat-notice-unpin" aria-label="공지 해제" title="공지 해제">✕</button>
+        </div>
+        <div class="chat-notice-body" id="chat-notice-body"></div>
+      </div>
+
       <div id="chat-messages" class="chat-messages"></div>
 
       <!-- 첨부 파일 미리보기 -->

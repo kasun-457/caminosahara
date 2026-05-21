@@ -5,6 +5,7 @@
 import { state } from './state.js';
 import { db, storage } from './firebase.js';
 import { showToast, escapeHtml } from './utils.js';
+import { openTrip } from './trips.js';
 
 const MSG_MAX_LEN = 1000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -39,14 +40,19 @@ function scheduleMarkRead() {
 }
 
 // 메시지 1건의 안 읽은 인원 수 (보낸 사람 제외)
+// 채팅창이 열려있는 동안 나(현재 사용자)는 항상 읽음으로 간주하여
+// readState 디바운스(400ms)로 인한 깜빡임을 방지한다.
 function unreadCountFor(msg, trip) {
   if (!trip || !msg.createdAt?.toMillis) return 0;
   const msgMs = msg.createdAt.toMillis();
   const readState = trip.readState || {};
   const members = trip.memberIds || [];
+  const myUid = state.currentUser?.uid;
+  const panelOpen = isChatPanelOpen();
   let unread = 0;
   for (const uid of members) {
-    if (uid === msg.senderUid) continue; // 보낸 사람은 카운트 안 함
+    if (uid === msg.senderUid) continue;     // 보낸 사람 제외
+    if (panelOpen && uid === myUid) continue; // 채팅을 보고 있는 나는 즉시 읽음 처리
     const ts = readState[uid];
     const readMs = ts?.toMillis ? ts.toMillis() : 0;
     if (readMs < msgMs) unread++;
@@ -72,6 +78,7 @@ function openChatPanel() {
 
   subscribeToChat(tripId);
   scheduleMarkRead(); // 열자마자 읽음 처리
+  renderNotice();
   setTimeout(() => document.getElementById('chat-input')?.focus(), 200);
 }
 
@@ -268,6 +275,16 @@ async function sendMessage() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
+    // trip.lastMessage 갱신 — 다른 클라이언트가 새 메시지 도착을 감지해 알림 띄움
+    const previewText = text || (attachments.length ? `📎 첨부 ${attachments.length}개` : '');
+    db.collection('trips').doc(tripId).set({
+      lastMessage: {
+        text: previewText.slice(0, 100),
+        senderUid: uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+    }, { merge: true }).catch(err => console.warn('lastMessage 갱신 실패:', err));
+
     input.value = '';
     autoResizeInput();
     _pendingAttachments = [];
@@ -397,7 +414,6 @@ function isImageViewerOpen() {
 function handleMessagesContextMenu(e) {
   const msgEl = e.target.closest('.chat-msg');
   if (!msgEl) return;
-  if (!msgEl.classList.contains('chat-msg-mine')) return; // 자기 메시지만
   if (_editingMessageId === msgEl.dataset.msgId) return;  // 편집 중엔 무시
 
   e.preventDefault();
@@ -405,19 +421,30 @@ function handleMessagesContextMenu(e) {
   const msg = state.chatMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  showContextMenu(e.clientX, e.clientY, msgId, !!msg.text);
+  const isMine = msgEl.classList.contains('chat-msg-mine');
+  const trip   = state.trips.find(t => t.id === state.currentTripId);
+  const isPinned = trip?.notice?.messageId === msgId;
+  showContextMenu(e.clientX, e.clientY, msgId, !!msg.text, isMine, isPinned);
 }
 
-function showContextMenu(x, y, msgId, hasText) {
+function showContextMenu(x, y, msgId, hasText, isMine, isPinned) {
   closeContextMenu();
 
   const menu = document.createElement('div');
   menu.className = 'chat-context-menu';
   menu.dataset.msgId = msgId;
+  // 공지: 텍스트가 있는 메시지에 한해 등록 가능. 본인/타인 모두 가능.
+  const pinBtn = hasText
+    ? (isPinned
+        ? '<button type="button" data-action="unpin">📌 공지 해제</button>'
+        : '<button type="button" data-action="pin">📌 공지로 등록</button>')
+    : '';
   menu.innerHTML = `
-    ${hasText ? '<button type="button" data-action="edit">✏️ 수정</button>' : ''}
-    <button type="button" data-action="delete">🗑️ 삭제</button>
+    ${pinBtn}
+    ${isMine && hasText ? '<button type="button" data-action="edit">✏️ 수정</button>' : ''}
+    ${isMine ? '<button type="button" data-action="delete">🗑️ 삭제</button>' : ''}
   `;
+  if (!menu.innerHTML.trim()) return; // 표시할 항목이 없으면 메뉴 안 띄움
 
   // 일단 화면 밖에 두고 크기 측정 후 위치 조정 (뷰포트 넘침 방지)
   menu.style.left = '0px';
@@ -449,8 +476,84 @@ function showContextMenu(x, y, msgId, hasText) {
       }, 0);
     } else if (action === 'delete') {
       confirmDeleteMessage(msgId);
+    } else if (action === 'pin') {
+      pinNotice(msgId);
+    } else if (action === 'unpin') {
+      unpinNotice();
     }
   });
+}
+
+// ── 공지 (trip.notice) ────────────────────────────────────────────────────
+async function pinNotice(msgId) {
+  const tripId = state.currentTripId;
+  const uid    = state.currentUser?.uid;
+  const msg    = state.chatMessages.find(m => m.id === msgId);
+  if (!tripId || !uid || !msg || !msg.text) return;
+  try {
+    await db.collection('trips').doc(tripId).set({
+      notice: {
+        messageId: msgId,
+        text: msg.text,
+        senderUid: msg.senderUid,
+        pinnedBy: uid,
+        pinnedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+    }, { merge: true });
+  } catch (err) {
+    console.error(err);
+    showToast('공지 등록에 실패했습니다.');
+  }
+}
+
+async function unpinNotice() {
+  const tripId = state.currentTripId;
+  if (!tripId) return;
+  try {
+    await db.collection('trips').doc(tripId).update({
+      notice: firebase.firestore.FieldValue.delete(),
+    });
+  } catch (err) {
+    console.error(err);
+    showToast('공지 해제에 실패했습니다.');
+  }
+}
+
+// 접기 상태는 localStorage 에 trip+notice 단위로 저장
+function noticeCollapseKey(tripId, noticeMsgId) {
+  return `chat-notice-collapsed:${tripId}:${noticeMsgId}`;
+}
+
+function renderNotice() {
+  const wrap = document.getElementById('chat-notice');
+  if (!wrap) return;
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  const notice = trip?.notice;
+  if (!notice || !notice.text) {
+    wrap.style.display = 'none';
+    return;
+  }
+  const profiles = trip?.memberProfiles || {};
+  const sender = profiles[notice.senderUid] || {};
+  const senderName = sender.nickname || sender.name || sender.email || '익명';
+
+  document.getElementById('chat-notice-sender').textContent = senderName;
+  document.getElementById('chat-notice-body').textContent = notice.text;
+
+  const collapsed = localStorage.getItem(noticeCollapseKey(trip.id, notice.messageId)) === '1';
+  wrap.classList.toggle('collapsed', collapsed);
+  document.getElementById('chat-notice-toggle').textContent = collapsed ? '▸' : '▾';
+
+  wrap.style.display = '';
+}
+
+function toggleNoticeCollapsed() {
+  const trip = state.trips.find(t => t.id === state.currentTripId);
+  if (!trip?.notice) return;
+  const key = noticeCollapseKey(trip.id, trip.notice.messageId);
+  const now = localStorage.getItem(key) === '1';
+  localStorage.setItem(key, now ? '0' : '1');
+  renderNotice();
 }
 
 function closeContextMenu() {
@@ -639,9 +742,18 @@ export function initChatPanel() {
   });
   messagesEl?.addEventListener('scroll', closeContextMenu);
 
-  // 다른 멤버가 채팅을 읽으면 trip 문서가 갱신됨 → 채팅 재렌더로 안 읽은 수 반영
+  // 다른 멤버가 채팅을 읽거나 공지를 등록/해제하면 trip 문서가 갱신됨 → 재렌더
   document.addEventListener('trips-updated', () => {
-    if (isChatPanelOpen()) renderChatMessages();
+    if (isChatPanelOpen()) {
+      renderChatMessages();
+      renderNotice();
+    }
+  });
+
+  // 공지 버튼
+  document.getElementById('chat-notice-toggle')?.addEventListener('click', toggleNoticeCollapsed);
+  document.getElementById('chat-notice-unpin')?.addEventListener('click', () => {
+    if (confirm('공지를 해제할까요?')) unpinNotice();
   });
 
   // 이미지 뷰어 키보드 (ESC 닫기, ←/→ 이동) — capture로 다른 ESC 핸들러보다 먼저 처리
@@ -691,4 +803,111 @@ export function initChatPanel() {
       }
     });
   }
+
+  // ── 글로벌 새 채팅 알림 ──────────────────────────────────────────────────
+  initChatNotifier();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  글로벌 채팅 알림 (어느 화면에서도 동작)
+// ══════════════════════════════════════════════════════════════════════════
+const _lastSeenMs = {};   // tripId → 마지막으로 확인한 lastMessage.createdAt ms
+let _notifierInitialized = false;
+let _notifTimer = null;
+
+function initChatNotifier() {
+  if (_notifierInitialized) return;
+  _notifierInitialized = true;
+
+  // 알림 DOM 생성
+  if (!document.getElementById('chat-notif-popup')) {
+    const el = document.createElement('div');
+    el.id = 'chat-notif-popup';
+    el.className = 'chat-notif-popup';
+    el.innerHTML = `
+      <div class="chat-notif-trip"></div>
+      <div class="chat-notif-row">
+        <strong class="chat-notif-sender"></strong>
+        <span class="chat-notif-text"></span>
+      </div>
+      <button type="button" class="chat-notif-close" aria-label="닫기">✕</button>
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('chat-notif-close')) {
+        hideChatNotif();
+        return;
+      }
+      const tripId = el.dataset.tripId;
+      if (tripId) jumpToTripChat(tripId);
+    });
+  }
+
+  document.addEventListener('trips-updated', onTripsUpdatedForNotifier);
+}
+
+function onTripsUpdatedForNotifier() {
+  const me = state.currentUser?.uid;
+  if (!me || !state.trips) return;
+
+  for (const trip of state.trips) {
+    const lm = trip.lastMessage;
+    if (!lm?.createdAt?.toMillis) continue;
+    const ms = lm.createdAt.toMillis();
+    const prev = _lastSeenMs[trip.id];
+
+    // 첫 관측 → 기준값만 저장 (과거 메시지로 알림 띄우지 않음)
+    if (prev === undefined) {
+      _lastSeenMs[trip.id] = ms;
+      continue;
+    }
+    if (ms <= prev) continue;
+    _lastSeenMs[trip.id] = ms;
+
+    // 내가 보낸 메시지면 알림 X
+    if (lm.senderUid === me) continue;
+    // 이미 해당 trip의 채팅창을 보고 있으면 알림 X
+    if (state.currentTripId === trip.id && isChatPanelOpen()) continue;
+
+    showChatNotif(trip, lm);
+  }
+}
+
+function showChatNotif(trip, lm) {
+  const el = document.getElementById('chat-notif-popup');
+  if (!el) return;
+  const profiles = trip.memberProfiles || {};
+  const sender = profiles[lm.senderUid] || {};
+  const senderName = sender.nickname || sender.name || sender.email || '익명';
+
+  el.dataset.tripId = trip.id;
+  el.querySelector('.chat-notif-trip').textContent = trip.title || '여행';
+  el.querySelector('.chat-notif-sender').textContent = senderName;
+  el.querySelector('.chat-notif-text').textContent = lm.text || '';
+  el.classList.add('active');
+
+  clearTimeout(_notifTimer);
+  _notifTimer = setTimeout(hideChatNotif, 5000);
+}
+
+function hideChatNotif() {
+  const el = document.getElementById('chat-notif-popup');
+  el?.classList.remove('active');
+  clearTimeout(_notifTimer);
+}
+
+function jumpToTripChat(tripId) {
+  hideChatNotif();
+  const trip = state.trips.find(t => t.id === tripId);
+  if (!trip) return;
+
+  // 이미 같은 여행에 있는 경우 → 채팅만 열기
+  if (state.currentTripId === tripId) {
+    if (!isChatPanelOpen()) openChatPanel();
+    return;
+  }
+  // 다른 여행 또는 홈 → 해당 여행으로 이동 후 채팅 열기
+  openTrip(tripId);
+  // openTrip 후 DOM이 안정되면 채팅 열기
+  setTimeout(() => openChatPanel(), 50);
 }
