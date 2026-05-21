@@ -134,6 +134,15 @@ export function confirmAction(message, callback) {
 
 export function goBack() {
   closeDetailPanel();
+  // 채팅 패널이 열려있으면 함께 닫음 (구독 해제 포함)
+  if (state.unsubscribeChat) {
+    state.unsubscribeChat();
+    state.unsubscribeChat = null;
+  }
+  document.getElementById('chat-panel')?.classList.remove('active');
+  document.getElementById('btn-chat-fab')?.classList.remove('chat-fab-open');
+  document.body.classList.remove('chat-open');
+
   state.currentTripId = null;
   window.history.replaceState(null, '', location.pathname + location.search);
   document.getElementById('nav-breadcrumb').textContent = '';

@@ -3533,21 +3533,115 @@ textarea { resize: vertical; min-height: 80px; }
   line-height: 1;
 }
 
-/* ── 채팅 모달 ──────────────────────────────────────────────────────────── */
-.modal-chat-shell {
-  width: 100%;
-  max-width: 560px;
-  height: 80vh;
-  max-height: 720px;
+/* ── 채팅 사이드 패널 + FAB ─────────────────────────────────────────────── */
+:root {
+  --chat-panel-width: 380px;
+}
+
+/* 우측 하단 토글 버튼 */
+.chat-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--trip-color, var(--accent));
+  color: #0b0b0d;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s;
+}
+
+.chat-fab:hover { transform: scale(1.08); }
+.chat-fab:active { transform: scale(0.96); }
+
+.chat-fab-icon { line-height: 1; pointer-events: none; }
+
+/* 채팅 열린 상태: FAB가 패널 옆으로 이동, 아이콘 변경 */
+.chat-fab.chat-fab-open {
+  right: calc(var(--chat-panel-width) + 1.5rem);
+}
+.chat-fab.chat-fab-open .chat-fab-icon::before {
+  content: '✕';
+}
+.chat-fab.chat-fab-open .chat-fab-icon { font-size: 0; }
+.chat-fab.chat-fab-open .chat-fab-icon::before { font-size: 1.3rem; }
+
+/* 사이드 패널 */
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--chat-panel-width);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding-bottom: 0; /* 입력창이 아래 붙도록 */
+  z-index: 150;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.35);
+}
+
+.chat-panel.active {
+  transform: translateX(0);
+}
+
+.chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-panel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.5rem;
+}
+
+.chat-panel-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, color 0.15s;
+}
+.chat-panel-close:hover { color: var(--text); background: var(--surface3); }
+
+/* 본문이 채팅 패널 너비만큼 좌측으로 밀려서 화면 분할 */
+body.chat-open main,
+body.chat-open header {
+  margin-right: var(--chat-panel-width);
+}
+
+main, header {
+  transition: margin-right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem 0.25rem;
+  padding: 0.75rem 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -3623,9 +3717,8 @@ textarea { resize: vertical; min-height: 80px; }
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
-  padding: 0.65rem 0 0.85rem;
+  padding: 0.7rem 0.9rem 0.9rem;
   border-top: 1px solid var(--border);
-  margin-top: 0.5rem;
 }
 
 .chat-input {
@@ -3647,8 +3740,12 @@ textarea { resize: vertical; min-height: 80px; }
 
 .chat-input:focus { border-color: var(--accent); }
 
-@media (max-width: 640px) {
-  .modal-chat-shell { height: 90vh; max-height: none; }
+/* 모바일: 채팅 패널이 전체 화면을 덮음 (분할 대신 오버레이) */
+@media (max-width: 720px) {
+  :root { --chat-panel-width: 100vw; }
+  .chat-panel { box-shadow: none; border-left: none; }
+  body.chat-open main { margin-right: 0; }
+  .chat-fab.chat-fab-open { right: 1.5rem; }
   .chat-msg { max-width: 88%; }
 }
 

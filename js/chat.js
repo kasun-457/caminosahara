@@ -1,32 +1,51 @@
 // ══════════════════════════════════════════════════════════════════════════════
 //  참여자 간 채팅 (trips/{tripId}/messages 서브컬렉션)
+//  사이드 패널 형태로 우측에서 슬라이드 인하며 화면을 분할한다.
 // ══════════════════════════════════════════════════════════════════════════════
 import { state } from './state.js';
 import { db } from './firebase.js';
-import { openModal, closeModal, showToast, escapeHtml } from './utils.js';
+import { showToast, escapeHtml } from './utils.js';
 
 const MSG_MAX_LEN = 1000;
 
-// ── 모달 열기/닫기 ──────────────────────────────────────────────────────────
-export function openChatModal(tripId) {
-  const trip = state.trips.find(t => t.id === tripId);
+// ── 채팅 패널 열기/닫기/토글 ────────────────────────────────────────────────
+export function openChatPanel() {
+  const tripId = state.currentTripId;
+  const trip   = state.trips.find(t => t.id === tripId);
   if (!trip) return;
-
-  // 멤버 외에는 열지 못함
   if (!trip.memberIds?.includes(state.currentUser?.uid)) return;
 
-  openModal('modal-chat');
   document.getElementById('chat-trip-title').textContent = trip.title;
 
-  subscribeToChat(tripId);
+  const panel = document.getElementById('chat-panel');
+  const fab   = document.getElementById('btn-chat-fab');
+  panel.classList.add('active');
+  panel.setAttribute('aria-hidden', 'false');
+  fab.classList.add('chat-fab-open');
+  document.body.classList.add('chat-open');
 
-  // 입력창 포커스
-  setTimeout(() => document.getElementById('chat-input')?.focus(), 50);
+  subscribeToChat(tripId);
+  setTimeout(() => document.getElementById('chat-input')?.focus(), 200);
 }
 
-export function closeChatModal() {
+export function closeChatPanel() {
+  const panel = document.getElementById('chat-panel');
+  const fab   = document.getElementById('btn-chat-fab');
+  panel?.classList.remove('active');
+  panel?.setAttribute('aria-hidden', 'true');
+  fab?.classList.remove('chat-fab-open');
+  document.body.classList.remove('chat-open');
   unsubscribeFromChat();
-  closeModal('modal-chat');
+}
+
+export function toggleChatPanel() {
+  const panel = document.getElementById('chat-panel');
+  if (panel?.classList.contains('active')) closeChatPanel();
+  else openChatPanel();
+}
+
+export function isChatPanelOpen() {
+  return document.getElementById('chat-panel')?.classList.contains('active');
 }
 
 // ── Firestore 구독 ─────────────────────────────────────────────────────────
@@ -63,11 +82,10 @@ function renderChatMessages() {
   const profiles = trip?.memberProfiles || {};
 
   if (state.chatMessages.length === 0) {
-    list.innerHTML = `<div class="chat-empty">아직 메시지가 없어요. 첫 메시지를 보내보세요!</div>`;
+    list.innerHTML = `<div class="chat-empty">아직 메시지가 없어요.<br>첫 메시지를 보내보세요!</div>`;
     return;
   }
 
-  // 같은 발신자의 연속 메시지는 헤더(이름·시간)를 한 번만 표시
   let prevSender = null;
   let prevDay    = null;
 
@@ -84,7 +102,7 @@ function renderChatMessages() {
     if (ts && dayKey !== prevDay) {
       dayDivider = `<div class="chat-day-divider">${ts.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}</div>`;
       prevDay = dayKey;
-      prevSender = null; // 날짜가 바뀌면 헤더 다시 표시
+      prevSender = null;
     }
 
     const showHeader = senderUid !== prevSender;
@@ -105,7 +123,6 @@ function renderChatMessages() {
       </div>`;
   }).join('');
 
-  // 가장 아래로 스크롤
   list.scrollTop = list.scrollHeight;
 }
 
@@ -134,11 +151,10 @@ async function sendMessage() {
   } catch (err) {
     console.error(err);
     showToast('메시지 전송에 실패했습니다.');
-    input.value = text; // 복원
+    input.value = text;
   }
 }
 
-// ── 입력창 자동 크기 조절 ──────────────────────────────────────────────────
 function autoResizeInput() {
   const input = document.getElementById('chat-input');
   if (!input) return;
@@ -147,26 +163,17 @@ function autoResizeInput() {
 }
 
 // ── 이벤트 초기화 ──────────────────────────────────────────────────────────
-export function initChatModal() {
-  const sendBtn = document.getElementById('btn-chat-send');
-  const input   = document.getElementById('chat-input');
-  const overlay = document.getElementById('modal-chat');
-  const closeBtn = overlay?.querySelector('[data-close="modal-chat"]');
+export function initChatPanel() {
+  document.getElementById('btn-chat-fab')?.addEventListener('click', toggleChatPanel);
+  document.getElementById('btn-chat-close')?.addEventListener('click', closeChatPanel);
+  document.getElementById('btn-chat-send')?.addEventListener('click', sendMessage);
 
-  sendBtn?.addEventListener('click', sendMessage);
-
+  const input = document.getElementById('chat-input');
   input?.addEventListener('input', autoResizeInput);
   input?.addEventListener('keydown', e => {
-    // Enter: 전송, Shift+Enter: 줄바꿈
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       sendMessage();
     }
-  });
-
-  // 모달이 X 또는 오버레이 클릭으로 닫힐 때 구독 해제
-  closeBtn?.addEventListener('click', unsubscribeFromChat);
-  overlay?.addEventListener('click', e => {
-    if (e.target === overlay) unsubscribeFromChat();
   });
 }

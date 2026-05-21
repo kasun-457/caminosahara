@@ -8,7 +8,6 @@
       </div>
       <div class="trip-hero-actions">
         <button class="btn-outline btn-sm" id="btn-members">👥 참여자</button>
-        <button class="btn-outline btn-sm" id="btn-chat">💬 채팅</button>
         <button class="btn-outline btn-sm" id="btn-budget">💰 가계부</button>
         <button class="btn-outline btn-sm" id="btn-settings">⚙ 설정</button>
       </div>
@@ -42,5 +41,25 @@
 
     <!-- 캘린더 그리드 뷰 -->
     <div id="cal-view" style="display:none"></div>
+
+    <!-- 채팅 토글 FAB (우측 하단 고정) -->
+    <button id="btn-chat-fab" class="chat-fab" type="button" aria-label="채팅 열기/닫기">
+      <span class="chat-fab-icon">💬</span>
+    </button>
+
+    <!-- 채팅 사이드 패널 (화면 분할) -->
+    <aside id="chat-panel" class="chat-panel" aria-hidden="true">
+      <div class="chat-panel-header">
+        <h3>💬 <span id="chat-trip-title"></span></h3>
+        <button class="chat-panel-close" id="btn-chat-close" aria-label="채팅 닫기">✕</button>
+      </div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <div class="chat-input-row">
+        <textarea id="chat-input" class="chat-input"
+                  placeholder="메시지를 입력하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"
+                  rows="1" maxlength="1000"></textarea>
+        <button class="btn-primary btn-sm" id="btn-chat-send">전송</button>
+      </div>
+    </aside>
   </section>
 </main>
