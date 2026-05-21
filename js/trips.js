@@ -248,9 +248,11 @@ export function renderTripList() {
 
 // ── 컨텍스트 메뉴 ─────────────────────────────────────────────────────────────
 let _ctxTripId = null;
+let _ctxOpenedAt = 0;
 
 function showContextMenu(x, y, tripId) {
   _ctxTripId = tripId;
+  _ctxOpenedAt = Date.now();
   const menu = document.getElementById('trip-ctx-menu');
   menu.style.left = x + 'px';
   menu.style.top  = y + 'px';
@@ -281,6 +283,8 @@ export function initContextMenu() {
     }
   });
   document.addEventListener('click', e => {
+    // 우클릭으로 메뉴가 막 열린 직후 같은 틱의 click 이벤트가 즉시 닫는 것 방지
+    if (Date.now() - _ctxOpenedAt < 200) return;
     if (!e.target.closest('#trip-ctx-menu')) hideContextMenu();
   });
   document.addEventListener('keydown', e => {
