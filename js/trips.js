@@ -373,7 +373,7 @@ export function openTrip(tripId) {
   // 관리자 전용 버튼 / 멤버 전용 버튼 표시 제어
   const owner = isOwner(trip);
   document.getElementById('btn-share-trip').style.display       = owner ? '' : 'none';
-  document.getElementById('btn-members').style.display          = owner ? '' : 'none';
+  document.getElementById('btn-members').style.display          = '';          // 모든 참여자에게 표시
   document.getElementById('btn-edit-trip').style.display        = owner ? '' : 'none';
   document.getElementById('btn-delete-trip').style.display      = owner ? '' : 'none';
   document.getElementById('btn-leave-trip').style.display       = owner ? 'none' : '';
@@ -618,18 +618,23 @@ export function initJoinRoomModal() {
   });
 }
 
-// ── 참여자 관리 모달 (관리자) ─────────────────────────────────────────────────
+// ── 참여자 모달 (관리자 + 일반 참여자) ──────────────────────────────────────
 export function openMembersModal(tripId) {
   const trip = state.trips.find(t => t.id === tripId);
-  if (!trip || !isOwner(trip)) return;
+  if (!trip) return;
   renderMembersModal(trip);
   openModal('modal-members');
 }
 
 function renderMembersModal(trip) {
-  const list = document.getElementById('member-list');
-  const me   = state.currentUser?.uid;
+  const list    = document.getElementById('member-list');
+  const me      = state.currentUser?.uid;
   const ownerId = trip.ownerId;
+  const owner   = isOwner(trip);
+
+  // 모달 헤더 텍스트 변경
+  document.querySelector('#modal-members .modal-header h2').textContent =
+    owner ? '참여자 관리' : '참여자 목록';
 
   // 소유자 먼저, 그 다음 나머지
   const ordered = [ownerId, ...trip.memberIds.filter(uid => uid !== ownerId)];
@@ -656,32 +661,129 @@ function renderMembersModal(trip) {
     }
 
     const role = trip.memberRoles?.[uid] || 'viewer';
-    return `
-      <div class="member-row" data-uid="${uid}">
-        <div class="member-info">
-          <span class="member-name">${display}</span>
-          ${sub}
-        </div>
-        <div class="member-controls">
-          <select class="member-role-select" data-uid="${uid}">
-            <option value="viewer"  ${role === 'viewer'  ? 'selected' : ''}>뷰어</option>
-            <option value="editor"  ${role === 'editor'  ? 'selected' : ''}>편집자</option>
-          </select>
-          <button class="btn-outline btn-sm member-promote" data-uid="${uid}" title="관리자로 위임">👑 위임</button>
-          <button class="btn-danger btn-sm member-kick" data-uid="${uid}" title="추방">추방</button>
-        </div>
-      </div>`;
+
+    if (owner) {
+      // 방장: 권한 변경 / 위임 / 추방 컨트롤
+      return `
+        <div class="member-row" data-uid="${uid}">
+          <div class="member-info">
+            <span class="member-name">${display}${uid === me ? ' (나)' : ''}</span>
+            ${sub}
+          </div>
+          <div class="member-controls">
+            <select class="member-role-select" data-uid="${uid}">
+              <option value="viewer"  ${role === 'viewer'  ? 'selected' : ''}>뷰어</option>
+              <option value="editor"  ${role === 'editor'  ? 'selected' : ''}>편집자</option>
+            </select>
+            <button class="btn-outline btn-sm member-promote" data-uid="${uid}" title="관리자로 위임">👑 위임</button>
+            <button class="btn-danger btn-sm member-kick" data-uid="${uid}" title="추방">추방</button>
+          </div>
+        </div>`;
+    } else {
+      // 일반 참여자: 읽기 전용
+      const roleLabel = role === 'editor' ? '편집자' : '뷰어';
+      const badgeCls  = role === 'editor' ? 'member-badge-editor' : 'member-badge-viewer';
+      return `
+        <div class="member-row" data-uid="${uid}">
+          <div class="member-info">
+            <span class="member-name">${display}${uid === me ? ' (나)' : ''}</span>
+            ${sub}
+          </div>
+          <span class="member-badge ${badgeCls}">${roleLabel}</span>
+        </div>`;
+    }
   }).join('');
 
-  list.querySelectorAll('.member-role-select').forEach(sel => {
-    sel.addEventListener('change', () => setMemberRole(trip.id, sel.dataset.uid, sel.value));
-  });
-  list.querySelectorAll('.member-promote').forEach(btn => {
-    btn.addEventListener('click', () => promptTransferOwner(trip.id, btn.dataset.uid));
-  });
-  list.querySelectorAll('.member-kick').forEach(btn => {
-    btn.addEventListener('click', () => promptKickMember(trip.id, btn.dataset.uid));
-  });
+  if (owner) {
+    list.querySelectorAll('.member-role-select').forEach(sel => {
+      sel.addEventListener('change', () => setMemberRole(trip.id, sel.dataset.uid, sel.value));
+    });
+    list.querySelectorAll('.member-promote').forEach(btn => {
+      btn.addEventListener('click', () => promptTransferOwner(trip.id, btn.dataset.uid));
+    });
+    list.querySelectorAll('.member-kick').forEach(btn => {
+      btn.addEventListener('click', () => promptKickMember(trip.id, btn.dataset.uid));
+    });
+  }
+
+  // ── 편집 권한 요청 섹션 ──────────────────────────────────────────────────
+  const requestSection = document.getElementById('edit-request-section');
+  const myRole = getRole(trip, me);
+
+  if (owner) {
+    // 방장: 대기 중인 요청 목록 표시
+    const requests = trip.editRequests || {};
+    const pendingUids = Object.keys(requests).filter(uid => requests[uid] === 'pending');
+    if (pendingUids.length > 0) {
+      requestSection.style.display = '';
+      document.getElementById('edit-request-list').innerHTML = pendingUids.map(uid => {
+        const p2      = trip.memberProfiles?.[uid] || {};
+        const disp    = escapeHtml(p2.nickname || p2.name || p2.email || uid.slice(0, 8) + '…');
+        return `
+          <div class="edit-request-row" data-uid="${uid}">
+            <span class="edit-request-name">${disp}</span>
+            <button class="btn-primary btn-sm btn-accept-request" data-uid="${uid}">수락</button>
+            <button class="btn-outline btn-sm btn-deny-request" data-uid="${uid}">거절</button>
+          </div>`;
+      }).join('');
+      document.querySelectorAll('.btn-accept-request').forEach(btn => {
+        btn.addEventListener('click', () => resolveEditRequest(trip.id, btn.dataset.uid, true));
+      });
+      document.querySelectorAll('.btn-deny-request').forEach(btn => {
+        btn.addEventListener('click', () => resolveEditRequest(trip.id, btn.dataset.uid, false));
+      });
+    } else {
+      requestSection.style.display = 'none';
+    }
+  } else if (myRole === 'viewer') {
+    // 뷰어: 편집 권한 요청 버튼 표시
+    requestSection.style.display = '';
+    const myRequest = (trip.editRequests || {})[me];
+    let requestHtml = '';
+    if (myRequest === 'pending') {
+      requestHtml = `<p class="edit-request-status">✅ 편집 권한 요청을 보냈습니다. 방장의 수락을 기다리는 중이에요.</p>`;
+    } else if (myRequest === 'denied') {
+      requestHtml = `<p class="edit-request-status edit-request-denied">❌ 요청이 거절됐습니다.</p>
+        <button class="btn-outline btn-sm" id="btn-request-edit">편집 권한 다시 요청</button>`;
+    } else {
+      requestHtml = `<button class="btn-outline btn-sm" id="btn-request-edit">✏️ 편집 권한 요청</button>`;
+    }
+    document.getElementById('edit-request-list').innerHTML = requestHtml;
+    document.getElementById('btn-request-edit')?.addEventListener('click', () => sendEditRequest(trip.id));
+  } else {
+    // 편집자 이상은 요청 섹션 숨김
+    requestSection.style.display = 'none';
+  }
+}
+
+// 편집 권한 요청 전송 (뷰어)
+async function sendEditRequest(tripId) {
+  const uid = state.currentUser?.uid;
+  try {
+    await db.collection('trips').doc(tripId).update({
+      [`editRequests.${uid}`]: 'pending',
+    });
+    showToast('편집 권한 요청을 방장에게 전송했습니다.');
+    const trip = state.trips.find(t => t.id === tripId);
+    if (trip) renderMembersModal(trip);
+  } catch (err) {
+    console.error(err);
+    showToast('요청 전송에 실패했습니다.');
+  }
+}
+
+// 편집 권한 요청 수락/거절 (방장)
+async function resolveEditRequest(tripId, uid, accept) {
+  try {
+    await db.collection('trips').doc(tripId).update({
+      [`editRequests.${uid}`]: accept ? 'accepted' : 'denied',
+      ...(accept ? { [`memberRoles.${uid}`]: 'editor' } : {}),
+    });
+    showToast(accept ? '편집 권한을 부여했습니다.' : '요청을 거절했습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('처리에 실패했습니다.');
+  }
 }
 
 async function setMemberRole(tripId, uid, role) {
@@ -792,7 +894,7 @@ export function initNicknameModal() {
   });
 }
 
-// 멤버 모달이 열려있는 동안 trip 데이터가 갱신되면 다시 그림
+// 멤버 모달이 열려있는 동안 trip 데이터가 갱신되면 다시 그림 (방장·일반 참여자 모두)
 export function refreshMembersModalIfOpen() {
   const overlay = document.getElementById('modal-members');
   if (!overlay?.classList.contains('active')) return;

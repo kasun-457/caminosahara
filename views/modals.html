@@ -225,15 +225,21 @@
   </div>
 </div>
 
-<!-- 참여자 관리 모달 (관리자 전용) -->
+<!-- 참여자 모달 (관리자 + 일반 참여자) -->
 <div class="modal-overlay" id="modal-members">
   <div class="modal">
     <div class="modal-header">
-      <h2>참여자 관리</h2>
+      <h2>참여자 목록</h2>
       <button class="modal-close" data-close="modal-members">✕</button>
     </div>
-    <p class="confirm-msg" style="text-align:left">멤버에게 뷰어/편집자 권한을 부여하거나, 관리자를 위임하고 추방할 수 있어요.</p>
     <div id="member-list" class="member-list"></div>
+
+    <!-- 편집 권한 요청 섹션 (방장: 대기 요청 표시 / 뷰어: 요청 버튼) -->
+    <div id="edit-request-section" class="edit-request-section" style="display:none">
+      <div class="edit-request-divider">편집 권한 요청</div>
+      <div id="edit-request-list"></div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn-outline" data-close="modal-members">닫기</button>
     </div>
