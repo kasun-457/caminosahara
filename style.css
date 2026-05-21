@@ -643,17 +643,20 @@ h1 {
   gap: 0 1.2rem;
   align-items: start;
   position: relative;
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.activity-item:nth-child(1) { animation-delay: 0.02s; }
-.activity-item:nth-child(2) { animation-delay: 0.05s; }
-.activity-item:nth-child(3) { animation-delay: 0.08s; }
-.activity-item:nth-child(4) { animation-delay: 0.11s; }
-.activity-item:nth-child(5) { animation-delay: 0.14s; }
-.activity-item:nth-child(6) { animation-delay: 0.17s; }
-.activity-item:nth-child(7) { animation-delay: 0.20s; }
-.activity-item:nth-child(n+8) { animation-delay: 0.22s; }
+/* 첫 렌더에만 슬라이드인 애니메이션 적용 (재렌더 시 깜박임 방지) */
+.activities-panel.first-render .activity-item {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.activities-panel.first-render .activity-item:nth-child(1) { animation-delay: 0.02s; }
+.activities-panel.first-render .activity-item:nth-child(2) { animation-delay: 0.05s; }
+.activities-panel.first-render .activity-item:nth-child(3) { animation-delay: 0.08s; }
+.activities-panel.first-render .activity-item:nth-child(4) { animation-delay: 0.11s; }
+.activities-panel.first-render .activity-item:nth-child(5) { animation-delay: 0.14s; }
+.activities-panel.first-render .activity-item:nth-child(6) { animation-delay: 0.17s; }
+.activities-panel.first-render .activity-item:nth-child(7) { animation-delay: 0.20s; }
+.activities-panel.first-render .activity-item:nth-child(n+8) { animation-delay: 0.22s; }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-8px); }

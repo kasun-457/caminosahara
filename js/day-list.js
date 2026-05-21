@@ -9,6 +9,7 @@ import { canEdit } from './trips.js';
 let _scrollObserver = null;
 let _programmaticScroll = false;
 let _programmaticScrollTimer = null;
+let _firstRender = true;
 
 function buildActivityHTML(act, date, editable) {
   const cat = CATEGORIES[act.category] || CATEGORIES['기타'];
@@ -168,6 +169,11 @@ export function renderDayTabs(trip) {
     html += buildDaySectionHTML(date, dayData, i, editable);
   });
   panel.innerHTML = html;
+  if (_firstRender) {
+    panel.classList.add('first-render');
+    _firstRender = false;
+    setTimeout(() => panel.classList.remove('first-render'), 600);
+  }
 
   // + 일정 추가 버튼
   panel.querySelectorAll('.btn-add-activity').forEach(btn => {
@@ -283,4 +289,9 @@ export function renderDayTabs(trip) {
 // 호환성 유지용 (calendar.js 등에서 호출하는 경우)
 export function renderActivities(trip, date) {
   renderDayTabs(trip);
+}
+
+// 새 여행을 열 때 슬라이드인 애니메이션을 한 번 재생하기 위한 리셋
+export function resetDayListFirstRender() {
+  _firstRender = true;
 }
