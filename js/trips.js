@@ -10,13 +10,8 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { state } from './state.js';
 import { db } from './firebase.js';
-<<<<<<< HEAD
 import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal, sha256Hex, escapeHtml } from './utils.js';
 import { renderDayTabs, resetDayListFirstRender } from './day-list.js';
-=======
-import { getDays, fmtShort, showToast } from './utils.js';
-import { renderDayTabs } from './day-list.js';
->>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a
 import { renderGridView } from './calendar.js';
 import { goBack, confirmAction, deleteTrip } from './activities.js';
 import { DEFAULT_CURRENCY, getCurrency } from './currencies.js';
@@ -148,36 +143,18 @@ let _lastScheduleFp = '';
 export function subscribeToTrips() {
   if (state.unsubscribeTrips) state.unsubscribeTrips();
   let _firstLoad = true;
-<<<<<<< HEAD
-  let _lastTripsHash = '';
-  let _lastCurrentTripHash = '';
-=======
   let _lastTripListFp = '';
->>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a
   state.unsubscribeTrips = db.collection('trips')
     .where('memberIds', 'array-contains', state.currentUser.uid)
     .onSnapshot(snapshot => {
-      // 로컬에서 발생한 보류 중 쓰기로 인한 스냅샷은 무시 (서버 확정본만 처리)
-      if (snapshot.metadata.hasPendingWrites) return;
-
       state.trips = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 
-<<<<<<< HEAD
-      // 목록이 실제로 바뀌었을 때만 렌더
-      const tripsHash = JSON.stringify(state.trips.map(t => ({
-        id: t.id, name: t.name, startDate: t.startDate, endDate: t.endDate,
-        memberIds: t.memberIds, role: t.role,
-      })));
-      if (tripsHash !== _lastTripsHash) {
-        _lastTripsHash = tripsHash;
-=======
       // 트립 목록도 채팅 필드 변경만으로는 재렌더할 필요 없음
       const listFp = JSON.stringify(state.trips.map(scheduleFingerprint));
       if (listFp !== _lastTripListFp) {
         _lastTripListFp = listFp;
->>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a
         renderTripList();
       }
 
@@ -195,16 +172,10 @@ export function subscribeToTrips() {
       if (state.currentTripId) {
         const trip = state.trips.find(t => t.id === state.currentTripId);
         if (trip) {
-<<<<<<< HEAD
-          const currentHash = JSON.stringify({ days: trip.days, name: trip.name, startDate: trip.startDate, endDate: trip.endDate });
-          if (currentHash !== _lastCurrentTripHash) {
-            _lastCurrentTripHash = currentHash;
-=======
           // 일정/지도/가계부에 영향 주는 필드가 변했을 때만 재렌더
           const fp = scheduleFingerprint(trip);
           if (fp !== _lastScheduleFp) {
             _lastScheduleFp = fp;
->>>>>>> be77099bc3fc8e485b27eb4c4947ddfb60d0e91a
             if (state.calView === 'list') renderDayTabs(trip);
             else renderGridView(trip);
           }
