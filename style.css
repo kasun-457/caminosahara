@@ -3740,6 +3740,36 @@ main, header {
 
 .chat-input:focus { border-color: var(--accent); }
 
+/* ── 드래그 & 드롭 오버레이 ───────────────────────────────────────── */
+.chat-panel::after {
+  content: '📎 파일을 여기에 놓으세요';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border: 3px dashed var(--accent);
+  border-radius: inherit;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s, visibility 0.18s;
+  z-index: 200;
+}
+
+.chat-panel.chat-drag-over::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.chat-panel.chat-drag-over > *:not(.chat-panel-header) {
+  pointer-events: none;
+}
+
 /* ── 메시지 수정/삭제 UI ───────────────────────────────────────────── */
 .chat-msg-edited {
   font-size: 0.65rem;

@@ -469,4 +469,44 @@ export function initChatPanel() {
       document.querySelectorAll('.chat-msg-menu.active').forEach(m => m.classList.remove('active'));
     }
   });
+
+  // ── 드래그 & 드롭 파일 업로드 ─────────────────────────────────────
+  const panel = document.getElementById('chat-panel');
+  if (panel) {
+    let dragCounter = 0;
+
+    panel.addEventListener('dragenter', e => {
+      // 파일 드래그인지 확인 (텍스트/링크 드래그는 무시)
+      if (!e.dataTransfer?.types?.includes('Files')) return;
+      e.preventDefault();
+      dragCounter++;
+      panel.classList.add('chat-drag-over');
+    });
+
+    panel.addEventListener('dragover', e => {
+      if (!e.dataTransfer?.types?.includes('Files')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    panel.addEventListener('dragleave', e => {
+      if (!e.dataTransfer?.types?.includes('Files')) return;
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        panel.classList.remove('chat-drag-over');
+      }
+    });
+
+    panel.addEventListener('drop', e => {
+      if (!e.dataTransfer?.types?.includes('Files')) return;
+      e.preventDefault();
+      dragCounter = 0;
+      panel.classList.remove('chat-drag-over');
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        onFileSelected(files);
+      }
+    });
+  }
 }
