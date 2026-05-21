@@ -430,11 +430,8 @@ function handleMessagesContextMenu(e) {
   showContextMenu(e.clientX, e.clientY, msgId, !!msg.text, isMine, isPinned);
 }
 
-let _ctxMenuOpenedAt = 0;
-
 function showContextMenu(x, y, msgId, hasText, isMine, isPinned) {
   closeContextMenu();
-  _ctxMenuOpenedAt = Date.now();
 
   const menu = document.createElement('div');
   menu.className = 'chat-context-menu';
@@ -741,18 +738,12 @@ export function initChatPanel() {
 
   // 컨텍스트 메뉴 외부 클릭 / 스크롤 / ESC 시 닫기
   document.addEventListener('click', e => {
-    // 우클릭으로 메뉴가 막 열린 직후 같은 틱의 click 이벤트가 즉시 닫는 것 방지
-    if (Date.now() - _ctxMenuOpenedAt < 200) return;
     if (!e.target.closest('.chat-context-menu')) closeContextMenu();
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeContextMenu();
   });
-  // 재렌더 직후의 scrollTop 변경(자동 스크롤)으로 메뉴가 즉시 닫히는 것도 방지
-  messagesEl?.addEventListener('scroll', () => {
-    if (Date.now() - _ctxMenuOpenedAt < 200) return;
-    closeContextMenu();
-  });
+  messagesEl?.addEventListener('scroll', closeContextMenu);
 
   // 스크롤 중에만 스크롤바 표시 (1초 동안 추가 스크롤 없으면 숨김)
   let _scrollHideTimer = null;

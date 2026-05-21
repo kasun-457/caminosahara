@@ -10,8 +10,8 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { state } from './state.js';
 import { db } from './firebase.js';
-import { getDays, fmtShort, showToast, generateShareCode, openModal, closeModal, sha256Hex, escapeHtml } from './utils.js';
-import { renderDayTabs, resetDayListFirstRender } from './day-list.js';
+import { getDays, fmtShort, showToast } from './utils.js';
+import { renderDayTabs } from './day-list.js';
 import { renderGridView } from './calendar.js';
 import { goBack, confirmAction, deleteTrip } from './activities.js';
 import { DEFAULT_CURRENCY, getCurrency } from './currencies.js';
@@ -303,11 +303,9 @@ export function renderTripList() {
 //  컨텍스트 메뉴 (우클릭으로 편집/삭제)
 // ══════════════════════════════════════════════════════════════════════════════
 let _ctxTripId = null;
-let _ctxOpenedAt = 0;
 
 function showContextMenu(x, y, tripId) {
   _ctxTripId = tripId;
-  _ctxOpenedAt = Date.now();
   const menu = document.getElementById('trip-ctx-menu');
   menu.style.left = x + 'px';
   menu.style.top  = y + 'px';
@@ -338,8 +336,6 @@ export function initContextMenu() {
     }
   });
   document.addEventListener('click', e => {
-    // 우클릭으로 메뉴가 막 열린 직후 같은 틱의 click 이벤트가 즉시 닫는 것 방지
-    if (Date.now() - _ctxOpenedAt < 200) return;
     if (!e.target.closest('#trip-ctx-menu')) hideContextMenu();
   });
   document.addEventListener('keydown', e => {
@@ -421,7 +417,6 @@ export function openTrip(tripId) {
   window.history.replaceState(null, '', '#' + tripId);
   state.currentDayIndex = 0;
   state.calDateOffset = 0;
-  resetDayListFirstRender();
   const trip = state.trips.find(t => t.id === tripId);
   if (!trip) return;
 
