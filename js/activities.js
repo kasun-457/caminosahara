@@ -4,6 +4,7 @@ import { uid, showToast, openModal, closeModal } from './utils.js';
 import { renderActivityFormFields, gatherActivityDetails } from './activity-fields.js';
 import { closeDetailPanel } from './detail-panel.js';
 import { purgeActivityAttachments } from './attachments.js';
+import { closeChatPanel } from './chat.js';
 
 export function openActivityModal(activityId, date, presetTime) {
   state.editingActivityId = activityId;
@@ -134,14 +135,7 @@ export function confirmAction(message, callback) {
 
 export function goBack() {
   closeDetailPanel();
-  // 채팅 패널이 열려있으면 함께 닫음 (구독 해제 포함)
-  if (state.unsubscribeChat) {
-    state.unsubscribeChat();
-    state.unsubscribeChat = null;
-  }
-  document.getElementById('chat-panel')?.classList.remove('active');
-  document.getElementById('btn-chat-fab')?.classList.remove('chat-fab-open');
-  document.body.classList.remove('chat-open');
+  closeChatPanel(); // 구독 해제 + DOM 클래스 정리 모두 포함
 
   state.currentTripId = null;
   window.history.replaceState(null, '', location.pathname + location.search);

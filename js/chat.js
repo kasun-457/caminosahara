@@ -3,8 +3,7 @@
 //  사이드 패널 형태로 우측에서 슬라이드 인하며 화면을 분할한다.
 // ══════════════════════════════════════════════════════════════════════════════
 import { state } from './state.js';
-import { db } from './firebase.js';
-import { storage } from './firebase.js';
+import { db, storage } from './firebase.js';
 import { showToast, escapeHtml } from './utils.js';
 
 const MSG_MAX_LEN = 1000;
@@ -19,7 +18,7 @@ let _pendingAttachments = []; // { file, type }
 let _editingMessageId = null; // 현재 편집 중인 메시지 ID
 
 // ── 채팅 패널 열기/닫기/토글 ────────────────────────────────────────────────
-export function openChatPanel() {
+function openChatPanel() {
   const tripId = state.currentTripId;
   const trip   = state.trips.find(t => t.id === tripId);
   if (!trip) return;
@@ -48,7 +47,7 @@ export function closeChatPanel() {
   unsubscribeFromChat();
 }
 
-export function toggleChatPanel() {
+function toggleChatPanel() {
   const panel = document.getElementById('chat-panel');
   if (panel?.classList.contains('active')) closeChatPanel();
   else openChatPanel();

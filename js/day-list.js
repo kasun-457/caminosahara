@@ -280,7 +280,3 @@ export function renderDayTabs(trip) {
   }));
 }
 
-// 호환성 유지용 (calendar.js 등에서 호출하는 경우)
-export function renderActivities(trip, date) {
-  renderDayTabs(trip);
-}

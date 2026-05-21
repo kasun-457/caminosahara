@@ -182,7 +182,7 @@ export function setDetailMode(mode) {
   }
 }
 
-export function getDetailMode() {
+function getDetailMode() {
   return document.getElementById('detail-panel')?.dataset.mode || 'view';
 }
 
@@ -309,7 +309,7 @@ export function renderDetailPanelFields(category, details = {}) {
   });
 }
 
-export function gatherDetailPanelFields() {
+function gatherDetailPanelFields() {
   const details = {};
   document.querySelectorAll('#dp-dynamic-fields .dp-field-input').forEach(el => {
     const v = el.value.trim();

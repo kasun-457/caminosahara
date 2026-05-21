@@ -8,12 +8,14 @@ import {
   toggleUserMenu, closeUserMenu, initAuthStateListener,
 } from './auth.js';
 import {
-  openTripModal, saveTripForm,
-  renderTripList, initContextMenu, initSortDropdown, initTripModalTabs,
-  leaveTrip, initInviteModal, initMembersInviteEvents, initJoinRoomModal,
-  openMembersModal, openSettingsModal,
-  initNicknameModal, initTripCurrencyPicker,
+  renderTripList, initContextMenu, initSortDropdown,
 } from './trips.js';
+import {
+  openTripModal, saveTripForm, initTripModalTabs,
+  initMembersInviteEvents, initJoinRoomModal,
+  openMembersModal, openSettingsModal,
+  initTripCurrencyPicker,
+} from './trip-modals.js';
 import {
   openActivityModal, saveActivityForm, deleteActivity,
   confirmAction, goBack, deleteTrip,
@@ -104,11 +106,9 @@ async function init() {
   document.getElementById('btn-budget').addEventListener('click', () => openBudgetModal());
   document.getElementById('btn-settings').addEventListener('click', () => openSettingsModal(state.currentTripId));
 
-  // 초대 / 방 참여 / 모달 초기화
-  initInviteModal();
+  // 참여자 모달 내 초대 / 방 참여 / 통화 선택 초기화
   initMembersInviteEvents();
   initJoinRoomModal();
-  initNicknameModal();
   initTripCurrencyPicker();
   initChatPanel();
 
@@ -196,7 +196,7 @@ async function init() {
       return;
     }
     ['modal-confirm', 'modal-activity', 'modal-trip', 'modal-delete-account',
-     'modal-invite', 'modal-join-room', 'modal-members', 'modal-nickname',
+     'modal-join-room', 'modal-members',
      'modal-budget', 'modal-settings'].forEach(id => {
       if (document.getElementById(id).classList.contains('active')) closeModal(id);
     });

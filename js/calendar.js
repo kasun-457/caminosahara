@@ -8,16 +8,16 @@ import { renderDayTabs } from './day-list.js';
 import { canEdit } from './trips.js';
 
 // ── 시간 변환 유틸 ────────────────────────────────────────────────────────────
-export function timeToMinutes(t) {
+function timeToMinutes(t) {
   if (!t) return null;
   const [h, m] = t.split(':').map(Number);
   return h * 60 + m;
 }
 
-export function minutesToPx(min) { return (min / 60) * HOUR_PX; }
-export function pxToMinutes(px) { return (px / HOUR_PX) * 60; }
+function minutesToPx(min) { return (min / 60) * HOUR_PX; }
+function pxToMinutes(px) { return (px / HOUR_PX) * 60; }
 
-export function minutesToTimeStr(min) {
+function minutesToTimeStr(min) {
   const h = Math.floor(Math.max(0, min) / 60) % 24;
   const m = Math.round(Math.max(0, min) % 60);
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -26,7 +26,7 @@ export function minutesToTimeStr(min) {
 // 일정 종료점이 다음날로 넘어가는지 계산
 // startMin: 시작 시각(분), durationMin: 길이(분)
 // 반환: { endTime: 'HH:MM', endsNextDay: boolean }
-export function computeEnd(startMin, durationMin) {
+function computeEnd(startMin, durationMin) {
   const absEnd = startMin + durationMin;
   if (absEnd <= 24 * 60) {
     return { endTime: minutesToTimeStr(absEnd), endsNextDay: false };
@@ -53,7 +53,7 @@ function shiftDate(dateStr, delta) {
 }
 
 // ── 활동 필드 업데이트 (드래그/리사이즈 후 Firestore 반영) ────────────────────
-export async function updateActivityFields(actId, date, updates) {
+async function updateActivityFields(actId, date, updates) {
   const trip = state.trips.find(t => t.id === state.currentTripId);
   if (!trip) return;
   const updatedDays = structuredClone(trip.days);
@@ -235,7 +235,7 @@ function dateToStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function renderMonthView(trip) {
+function renderMonthView(trip) {
   const calEl = document.getElementById('cal-view');
   const allDates = getDays(trip.startDate, trip.endDate);
   const tripStart = new Date(trip.startDate + 'T00:00:00');
@@ -374,7 +374,7 @@ export function renderMonthView(trip) {
   });
 }
 
-export function updateCalPeriodLabel(trip, visibleDates, allDates) {
+function updateCalPeriodLabel(trip, visibleDates, allDates) {
   const label = document.getElementById('cal-period-label');
   if (!label) return;
   if (state.calView === 'all') {
@@ -391,7 +391,7 @@ export function updateCalPeriodLabel(trip, visibleDates, allDates) {
 }
 
 // ── 드래그 & 리사이즈 ─────────────────────────────────────────────────────────
-export function setupEventDrag(eventEl, calBody) {
+function setupEventDrag(eventEl, calBody) {
   let dragState = null;
   eventEl.addEventListener('mousedown', e => {
     if (e.target.closest('.cal-event-resize')) return;
@@ -456,7 +456,7 @@ export function setupEventDrag(eventEl, calBody) {
   }
 }
 
-export function setupEventResize(resizeEl, calBody) {
+function setupEventResize(resizeEl, calBody) {
   let resizeState = null;
   resizeEl.addEventListener('mousedown', e => {
     const trip = state.trips.find(t => t.id === state.currentTripId);
@@ -516,7 +516,7 @@ export function setupEventResize(resizeEl, calBody) {
 }
 
 // ── 시간 미정 칩을 그리드로 드래그해 시간 설정 ────────────────────────────────
-export function setupAllDayDrag(chipEl, calBody, calEl) {
+function setupAllDayDrag(chipEl, calBody, calEl) {
   let dragState = null;
 
   chipEl.addEventListener('mousedown', e => {

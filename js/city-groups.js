@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { db } from './firebase.js';
 import { escapeHtml, showToast } from './utils.js';
 
-export const CITY_COLORS = [
+const CITY_COLORS = [
   '#60a0f0', '#f0a060', '#c8f060', '#f060a0',
   '#c060f0', '#60f0c8', '#f0d060', '#f06060',
   '#a0d0a0', '#d0a060',

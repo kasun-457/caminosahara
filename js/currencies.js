@@ -53,13 +53,6 @@ export function currencyShortLabel(code) {
   return `${c.symbol} ${c.code}`;
 }
 
-// 풀 라벨: "₩ KRW · 대한민국 원"
-export function currencyFullLabel(code) {
-  const c = CURRENCY_MAP[code];
-  if (!c) return code;
-  return `${c.symbol} ${c.code} · ${c.ko}`;
-}
-
 // 금액 + 통화코드 → "₩15,000" / "€15.50" 형태
 export function formatMoney(amount, code) {
   const c = CURRENCY_MAP[code];

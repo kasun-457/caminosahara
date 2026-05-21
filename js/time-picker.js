@@ -15,7 +15,7 @@ function buildOptions() {
 }
 const TIME_OPTIONS = buildOptions();
 
-export class TimePicker {
+class TimePicker {
   constructor(inputEl) {
     this.input = inputEl;
     this.popup = null;

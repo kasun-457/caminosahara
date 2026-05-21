@@ -10,13 +10,13 @@ export const ATTACHABLE_CATEGORIES = new Set(['교통', '관광', '숙박', '식
 const ACCEPT_TYPES = 'application/pdf,image/png,image/jpeg,image/jpg,image/webp,image/heic';
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export function fmtFileSize(bytes) {
+function fmtFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function fileIcon(type = '') {
+function fileIcon(type = '') {
   if (type.startsWith('image/')) return '🖼️';
   if (type === 'application/pdf') return '📄';
   return '📎';

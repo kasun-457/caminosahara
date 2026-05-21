@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"C:\\\\강성현\\\\가대\\\\산티아고\\\\sahara-website\\\\\")"
+    ]
+  }
+}

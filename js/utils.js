@@ -104,10 +104,3 @@ export function generateTimeOptions() {
   return times;
 }
 
-export function renderTimeSelect(value = '') {
-  const times = generateTimeOptions();
-  const options = times.map(t =>
-    `<option value="${t}" ${t === value ? 'selected' : ''}>${t}</option>`
-  ).join('');
-  return `<select class="time-select">${options}</select>`;
-}
