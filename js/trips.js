@@ -5,6 +5,29 @@ import { renderDayTabs } from './day-list.js';
 import { renderGridView } from './calendar.js';
 import { goBack, confirmAction, deleteTrip } from './activities.js';
 
+// ── 정렬 방식 저장/불러오기 (localStorage, 계정별) ───────────────────────────
+export function loadSortPref() {
+  const uid = state.currentUser?.uid;
+  if (!uid) return;
+  const saved = localStorage.getItem(`tripSort_${uid}`);
+  if (saved && ['recent', 'startDate', 'name', 'manual'].includes(saved)) {
+    state.tripSort = saved;
+  } else {
+    state.tripSort = 'startDate'; // 계정 최초 접속 기본값
+  }
+  // 드롭다운 라벨 동기화
+  const label = document.getElementById('sort-label');
+  if (label) label.textContent = SORT_LABELS[state.tripSort];
+  document.querySelectorAll('.sort-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.sort === state.tripSort);
+  });
+}
+
+function saveSortPref(sort) {
+  const uid = state.currentUser?.uid;
+  if (uid) localStorage.setItem(`tripSort_${uid}`, sort);
+}
+
 // ── 수동 정렬 순서 (localStorage) ─────────────────────────────────────────────
 function getManualOrder() {
   try { return JSON.parse(localStorage.getItem(`tripOrder_${state.currentUser?.uid}`) || '[]'); }

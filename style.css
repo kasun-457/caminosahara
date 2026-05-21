@@ -422,7 +422,7 @@ h1 {
 /* ── 날짜 탭 ──────────────────────────────────────────────────────────── */
 .day-tabs-wrapper {
   overflow: hidden;
-  padding: 0 0 0.6rem;
+  padding: 0.75rem 0 0.6rem;
   position: relative;
 }
 
